@@ -1,4 +1,4 @@
-# Icarus_Diffusion
+# lardiff
 
 This repository contains code for measuring the ionization electron diffusion coefficients, $D_L$ and $D_T$, in the ICARUS LArTPC. The major components included are
 - C++ source code for extracting waveform information from calibration ntuples
