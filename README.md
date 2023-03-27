@@ -30,19 +30,28 @@ If you encounter build errors, there is likely an issue with your ROOT installat
 
 ## Python Installation
 
-The Python code includes some external dependencies which by default cannot be installed by users on the gpvms (and other servers with similar security measures). The easiest way to manage these installations without causing conflicts is to create a virtual environment using Python's built-in `venv` module. Virtual environments are stored in a directory where you have write access (e.g., in your `/app` space) and activated when necessary.
+The Python code includes some external dependencies which by default cannot be installed by users on the gpvms (and other servers with similar security measures). The easiest way to manage these installations without causing conflicts is to create a virtual environment using Python's built-in `venv` module. Virtual environments are stored in a directory where you have write access (e.g., in your `/app` space) and can be activated when necessary.
+
 ```
 cd /path/to/virtual/environments # e.g., in your /app space
 python3 -m venv my_environment
 ```
-Then, to activate the virtual environment and install the packages necessary for the diffusion measurement code,
+
+where `my_environment` can be named whatever you want. To activate the virtual environment and install the packages necessary for the diffusion measurement code,
 ```
 source /path/to/virtual/environments/my_environment/bin/activate
-cd /path/to/Icarus_Diffusion/python/icarus_diffusion/
+cd /path/to/lardiff/python/
 python3 -m pip install .
 ```
 
-You should then be able to run the Python scripts using the output files from the waveform analyzer as input.
+This will install the lardiff package and its dependencies in your virtual environment. To test your installation, open up an interactive Python session and attempt to import this package:
+
+```
+$ python3
+>>> import lardiff
+```
+
+If there are no errors, you should then be able to run the Python scripts using the output files from the waveform analyzer as input. 
 
 # Usage
 To-do
