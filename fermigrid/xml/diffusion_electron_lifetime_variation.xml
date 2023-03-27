@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+
+<!-- Production Project -->
+
+<!DOCTYPE project [
+<!--<!ENTITY release    "v09_37_02_04">-->
+<!ENTITY release     "v09_56_00_01">
+<!ENTITY releasetag  "e20:prof">
+<!ENTITY file_type   "mc">
+<!ENTITY run_type    "physics">
+<!ENTITY scratch_dir "/pnfs/icarus/scratch/users/amogan/">
+<!ENTITY tar_dir     "/pnfs/icarus/resilient/users/amogan/diffusion_tarballs/">
+<!ENTITY name        "diffusion_infinite_lifetime">
+<!ENTITY date        "Mar2023">
+<!ENTITY ver         "v3_test_Mar2023">
+<!ENTITY num_jobs    "50">
+<!ENTITY num_events  "1000">
+]>
+
+<project name="&name;">
+
+  <!-- Group -->
+  <group>icarus</group>
+
+  <!-- Project size -->
+  <!-- numevents/num_jobs gives events per job -->
+  <numevents>&num_events;</numevents>
+  <!--<numevents>20000</numevents>-->
+  <maxfilesperjob>1</maxfilesperjob>
+
+  <!-- Operating System -->
+  <os>SL7</os>
+
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC</resource>
+
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>&releasetag;</qual>
+    <local>&tar_dir;/icaruscode_v09_56_00_01_with_elifetime_sce_fcl.tar</local> 
+  </larsoft>
+
+  <!-- Project stages -->
+  <!-- <fcldir>&PNFSpath;tars/</fcldir> -->
+
+  <stage name="reco0">
+      <!-- <fcl>cosmics_g4_icarus_sce_lite.fcl</fcl>-->
+      <fcl>prodcorsika_protononly_icarus.fcl</fcl>
+      <fcl>g4_icarus_change_elect_lifetime_sce.fcl</fcl>
+      <fcl>standard_detsim_icarus.fcl</fcl>
+      <fcl>stage0_multiTPC_icarus_MC_wf.fcl</fcl> 
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</bookdir>
+      <numjobs>&num_jobs;</numjobs>
+      <datatier>generated</datatier>
+      <memory>5000</memory>
+      <disk>20GB</disk> 
+      <!-- This bit will resubmit jobs that are held due to exceeding memory request and give them more memory -->
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=1000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+  </stage>
+
+  <stage name="reco1">
+      <fcl>stage1_multiTPC_icarus_gauss_MC.fcl</fcl> 
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</bookdir>
+      <numjobs>&num_jobs;</numjobs>
+      <!--<inputlist>inputlist_reco0_default_20kEvts.txt</inputlist>-->
+      <datatier>generated</datatier>
+      <memory>8000</memory>
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=3000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+      <disk>18GB</disk> 
+  </stage>
+
+  <stage name="ntuple">
+      <fcl>ntupler_saveWF_icarus_MC.fcl</fcl> 
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</bookdir>
+      <!--<numjobs>&num_jobs;</numjobs>-->
+      <numjobs>93</numjobs>
+      <inputlist>inputlist_ntupler_elifetime_2kEvts.txt</inputlist>
+      <datatier>generated</datatier>
+      <memory>1600</memory>
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=1000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+  </stage>
+
+  <!-- file type -->
+  <filetype>&file_type;</filetype>
+
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+
+</project>

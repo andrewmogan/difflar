@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+
+<!-- Production Project -->
+
+<!DOCTYPE project [
+<!--<!ENTITY release    "v09_37_02_04">-->
+<!ENTITY release    "v09_56_00_01">
+<!ENTITY releasetag "e20:prof">
+<!ENTITY file_type  "mc">
+<!ENTITY run_type   "physics">
+<!ENTITY scratch_dir "/pnfs/icarus/scratch/users/amogan/">
+<!ENTITY name       "diffusion_nominal">
+<!ENTITY date       "Feb2023">
+<!ENTITY ver        "v4_20kEvts">
+<!ENTITY num_jobs   "1000">
+]>
+
+<project name="&name;">
+
+  <!-- Group -->
+  <group>icarus</group>
+
+  <!-- Project size -->
+  <!-- numevents/num_jobs gives events per job -->
+  <numevents>1000</numevents>
+  <!--<numevents>20000</numevents>-->
+  <maxfilesperjob>1</maxfilesperjob>
+
+  <!-- Operating System -->
+  <os>SL7</os>
+
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC</resource>
+
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>&releasetag;</qual>
+    <!-- <local>&PNFSpath;tars/&release;.tar</local> -->
+  </larsoft>
+
+  <!-- Project stages -->
+  <!-- <fcldir>&PNFSpath;tars/</fcldir> -->
+
+  <stage name="geng4">
+      <fcl>prodcorsika_protononly_icarus.fcl</fcl>
+      <fcl>standard_g4_icarus_sce.fcl</fcl>
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/g4</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/g4</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/g4</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/g4</bookdir>
+      <numjobs>&num_jobs;</numjobs>
+      <datatier>generated</datatier>
+      <memory>5400</memory>
+      <disk>8GB</disk> 
+      <!-- This bit will resubmit jobs that are held due to exceeding memory request and give them more memory -->
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=1000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+  </stage>
+
+  <stage name="detsim">
+      <fcl>standard_detsim_icarus.fcl</fcl>
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/detsim</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/detsim</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/detsim</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/detsim</bookdir>
+      <numjobs>&num_jobs;</numjobs>
+      <inputlist>inputlist_g4_default_20kEvts.txt</inputlist>
+      <datatier>generated</datatier>
+      <memory>3400</memory>
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=1000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+      <disk>15GB</disk> 
+  </stage>
+
+  <stage name="reco0">
+      <fcl>stage0_multiTPC_icarus_MC_wf.fcl</fcl> 
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco0</bookdir>
+      <numjobs>&num_jobs;</numjobs>
+      <inputlist>inputlist_detsim_default_20kEvts.txt</inputlist>
+      <datatier>generated</datatier>
+      <memory>4600</memory> <!-- 4400 -->
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=1000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+      <disk>14GB</disk> 
+  </stage>
+
+  <stage name="reco1">
+      <fcl>stage1_multiTPC_icarus_gauss_MC.fcl</fcl> 
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/reco1</bookdir>
+      <numjobs>&num_jobs;</numjobs>
+      <inputlist>inputlist_reco0_default_20kEvts.txt</inputlist>
+      <datatier>generated</datatier>
+      <memory>8000</memory>
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=3000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+      <disk>18GB</disk> 
+  </stage>
+
+  <stage name="ntuple">
+      <fcl>ntupler_saveWF_icarus_MC.fcl</fcl> 
+      <schema>root</schema>
+      <outdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</outdir>
+      <workdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</workdir>
+      <logdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</logdir>
+      <bookdir>&scratch_dir;/&name;_&release;/&date;_&ver;/ntuple</bookdir>
+      <!--<numjobs>&num_jobs;</numjobs>-->
+      <numjobs>973</numjobs>
+      <inputlist>inputlist_ntupler_19kEvts.txt</inputlist>
+      <datatier>generated</datatier>
+      <memory>1600</memory>
+      <jobsub> --expected-lifetime=short --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceMemory=1000' --lines '+FERMIHTC_GraceLifetime=3600'</jobsub>
+  </stage>
+
+  <!-- file type -->
+  <filetype>&file_type;</filetype>
+
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+
+</project>
