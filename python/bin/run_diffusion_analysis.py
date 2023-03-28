@@ -11,7 +11,7 @@ from numba import jit
 import uproot
 
 from lardiff.input_checks import check_input_filename, check_input_range
-from lardiff.waveform_functions import create_signal, create_signal2
+from lardiff.waveform_functions import create_signal
 from lardiff.consts import *
 
 def measure_diffusion(input_filename, angle_range, dl_range, dt_range, is_data=False):
@@ -19,36 +19,52 @@ def measure_diffusion(input_filename, angle_range, dl_range, dt_range, is_data=F
 
     # angle_range is of the form [min, max, step]
     angle_bins = [[x, x + angle_range[2]] for x in range(angle_range[0], angle_range[1], angle_range[2])]
+    print('angle_bins', angle_bins)
     angle_sim_step = 0.1
 
-    input_sig = np.zeros((len(angle_bins), N_ticks_fine, N_wires_fine))
-    input_sig2 = np.zeros((len(angle_bins), N_ticks_fine, N_wires_fine))
+    input_signal = np.zeros((len(angle_bins), N_ticks_fine, N_wires_fine))
     anode_hist        = np.zeros((len(angle_bins), N_ticks, N_wires))
     anode_uncert_hist = np.zeros((len(angle_bins), N_ticks, N_wires))
     cathode_hist        = np.zeros((len(angle_bins), N_ticks, N_wires))
     cathode_uncert_hist = np.zeros((len(angle_bins), N_ticks, N_wires))
 
-    for bin_idx in range(len(angle_bins)):
-        print('------bin_idx-------', bin_idx)
+    #for bin_idx, angles in enumerate(range(len(angle_bins))):
+    for bin_idx, angles in enumerate(angle_bins):
+        print('bin_idx, angles', bin_idx, angles)
         # Generate a sequence of angles at the center of each bin
-        start_angle = angle_bins[bin_idx][0] + angle_sim_step/2
-        end_angle = angle_bins[bin_idx][1] - angle_sim_step/2
+        #start_angle = angle_bins[bin_idx][0]# + angle_sim_step/2
+        #end_angle = angle_bins[bin_idx][1]# - angle_sim_step/2
+        start_angle = angles[0]
+        end_angle   = angles[1]
+
+        # Each angle bin is finely split into sub-bins with step size of angle_sim_step
         num_angles = int((end_angle - start_angle) / angle_sim_step) + 1
-        angles = np.linspace(start_angle, end_angle, num_angles)
-        print('angles', angles)
+        signal_angles = np.linspace(start_angle + angle_sim_step/2, end_angle - angle_sim_step/2, num_angles)
 
         # Calculate the signal for this set of angles and store it in the input_sig array
-        input_sig[bin_idx] = create_signal(angles)
-        anode_hist[bin_idx] = np.swapaxes(input_file['AnodeTrackHist2D_%dto%d'       % (angle_bins[k][0], angle_bins[k][1])].values(),0,1)
+        input_signal[bin_idx] = create_signal(signal_angles)
+        anode_hist[bin_idx]        = np.swapaxes(input_file['AnodeTrackHist2D_%dto%d'       % (start_angle, end_angle)].values(), 0, 1)
+        anode_uncert_hist[bin_idx] = np.swapaxes(input_file['AnodeTrackUncertHist2D_%dto%d' % (start_angle, end_angle)].values(), 0, 1)
+        cathode_hist[bin_idx]        = np.swapaxes(input_file['CathodeTrackHist2D_%dto%d'       % (start_angle, end_angle)].values(), 0, 1)
+        cathode_uncert_hist[bin_idx] = np.swapaxes(input_file['CathodeTrackUncertHist2D_%dto%d' % (start_angle, end_angle)].values(), 0, 1)
 
-    #for k in range(len(angle_bins)):
-    #    input_sig[k] = create_signal(np.arange(angle_bins[k][0] + (angle_sim_step/2.0), angle_bins[k][1] - (angle_sim_step/2.0) + 0.00001, angle_sim_step))
-    #    anode_hist[k]        = np.swapaxes(input_file['AnodeTrackHist2D_%dto%d'       % (angle_bins[k][0], angle_bins[k][1])].values(),0,1)
-    #    anode_uncert_hist[k] = np.swapaxes(input_file['AnodeTrackUncertHist2D_%dto%d' % (angle_bins[k][0], angle_bins[k][1])].values(),0,1)
-    #    cathode_hist[k]        = np.swapaxes(input_file['CathodeTrackHist2D_%dto%d'       % (angle_bins[k][0], angle_bins[k][1])].values(),0,1)
-    #    cathode_uncert_hist[k] = np.swapaxes(input_file['CathodeTrackUncertHist2D_%dto%d' % (angle_bins[k][0], angle_bins[k][1])].values(),0,1)
+    DL_min  = dl_range[0]
+    DL_max  = dl_range[1]
+    DL_step = dl_range[2]
 
-    pass
+    DT_min  = dt_range[0]
+    DT_max  = dt_range[1]
+    DT_step = dt_range[2]
+
+    min_chisq = np.inf
+    min_numvals = 0.0
+    all_shifts_result = np.zeros((len(angle_bins), N_wires))
+    all_shifts_actual = np.zeros((len(angle_bins), N_wires))
+    all_shifts_test   = np.zeros((len(angle_bins), N_wires))
+
+    chisq_values = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
+    num_values   = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
+    row = 0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -84,8 +100,6 @@ if __name__ == "__main__":
         check_input_range(args.dt_range)
     except argparse.ArgumentTypeError as e:
         parser.error(str(e))
-
-    print('args.angle_range:', args.angle_range)
 
     measure_diffusion(args.input_filename, args.angle_range, args.dl_range, args.dt_range, args.is_data)
 
