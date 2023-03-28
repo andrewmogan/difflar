@@ -1,5 +1,18 @@
+import numpy as np
+from scipy import fftpack
+from scipy import stats
+
+from .consts import *
+from .waveform_functions import smear_signal, convolve, \
+     deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
+
 # Calculate one chi-squared point given value of DL and DT and 2D distributions associated with specific track data angle bin
 def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist, DL_hyp, DT_hyp):
+    print('[CALCCHI2] input_sig', input_sig)
+    print('[CALCCHI2] anode_hist', anode_hist)
+    print('[CALCCHI2] anode_uncert_hist', anode_uncert_hist)
+    print('[CALCCHI2] cathode_hist', cathode_hist)
+    print('[CALCCHI2] cathode_uncert_hist', cathode_uncert_hist)
     sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
     sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
     sig_A_coarse = coarsen_signal(sig_A)
@@ -35,7 +48,7 @@ def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_u
     shift_vec = np.zeros((N_wires))
     for col in range(((N_wires-1)//2)-((N_wires_fit-1)//2), ((N_wires-1)//2)+((N_wires_fit-1)//2)+1):
         if col != (N_wires-1)//2:
-            min_chisq = 99999999.0
+            min_chisq = np.inf
             min_numvals = 0.0
             for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
                 anode_norm = 0

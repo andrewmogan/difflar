@@ -1,4 +1,7 @@
 import numpy as np
+import scipy.interpolate as interp
+from scipy import fftpack
+from scipy import stats
 from numba import jit
 from .consts import *
 
