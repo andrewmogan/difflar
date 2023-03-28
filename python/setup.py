@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 VER = "1.0.0"
 
 setup(
-    name="icarus_diffusion",
+    name="lardiff",
     version=VER,
     author="Andrew J. Mogan, Michael Mooney, Sebastian Ruterbories",
     author_email="andrew.mogan@colostate.edu, michael.ryan.mooney@colostate.edu, sebastian.ruterbories@colostate.edu",
