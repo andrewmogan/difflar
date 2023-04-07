@@ -8,11 +8,6 @@ from .waveform_functions import smear_signal, convolve, \
 
 # Calculate one chi-squared point given value of DL and DT and 2D distributions associated with specific track data angle bin
 def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist, DL_hyp, DT_hyp):
-    print('[CALCCHI2] input_sig', input_sig)
-    print('[CALCCHI2] anode_hist', anode_hist)
-    print('[CALCCHI2] anode_uncert_hist', anode_uncert_hist)
-    print('[CALCCHI2] cathode_hist', cathode_hist)
-    print('[CALCCHI2] cathode_uncert_hist', cathode_uncert_hist)
     sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
     sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
     sig_A_coarse = coarsen_signal(sig_A)
@@ -39,39 +34,47 @@ def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_u
     cathode_max = 0.0
     for col in range(((N_wires-1)//2)-((N_wires_fit-1)//2), ((N_wires-1)//2)+((N_wires_fit-1)//2)+1):
         for row in range(((N_ticks-1)//2)-((N_ticks_fit-1)//2), ((N_ticks-1)//2)+((N_ticks_fit-1)//2)+1):
-            if col != (N_wires-1)//2:
-                if cathode_hist[row,col] > cathode_max:
-                    cathode_max = cathode_hist[row,col]
+            if col == (N_wires-1)//2: continue
+            if cathode_hist[row,col] < cathode_max: continue
+            cathode_max = cathode_hist[row,col]
 
     chisq = 0.0
     numvals = 0.0
     shift_vec = np.zeros((N_wires))
     for col in range(((N_wires-1)//2)-((N_wires_fit-1)//2), ((N_wires-1)//2)+((N_wires_fit-1)//2)+1):
-        if col != (N_wires-1)//2:
-            min_chisq = np.inf
-            min_numvals = 0.0
-            for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
-                anode_norm = 0
-                pred_norm = 0
-                cathode_norm = 0
-                pred_hist_1D_shifted = shift_signal_1D(pred_hist[:,col], shift_val)
-                pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:,col], shift_val)
-                for row in range(((N_ticks-1)//2)-((N_ticks_fit-1)//2), ((N_ticks-1)//2)+((N_ticks_fit-1)//2)+1):
-                    if cathode_hist[row,col] > threshold_rel*cathode_max:
-                        anode_norm += anode_hist[row,col]
-                        pred_norm += pred_hist_1D_shifted[row]
-                        cathode_norm += cathode_hist[row,col]
-                chisq_temp = 0.0
-                numvals_temp = 0.0
-                for row in range(((N_ticks-1)//2)-((N_ticks_fit-1)//2), ((N_ticks-1)//2)+((N_ticks_fit-1)//2)+1):
-                    if cathode_hist[row,col] > threshold_rel*cathode_max:
-                        chisq_temp += ((pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row,col]/cathode_norm)**2)/((pred_uncert_hist_1D_shifted[row]/pred_norm)**2 + (cathode_uncert_hist[row,col]/cathode_norm)**2)
-                        numvals_temp += 1.0
-                if chisq_temp < min_chisq:
-                    min_chisq = chisq_temp
-                    min_numvals = numvals_temp
-                    shift_vec[col] = shift_val
-            chisq += min_chisq
-            numvals += min_numvals
+
+        if col == (N_wires-1)//2: continue
+
+        min_chisq = np.inf
+        min_numvals = 0.0
+        for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
+            anode_norm = 0
+            pred_norm = 0
+            cathode_norm = 0
+            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:,col], shift_val)
+            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:,col], shift_val)
+            for row in range(((N_ticks-1)//2)-((N_ticks_fit-1)//2), ((N_ticks-1)//2)+((N_ticks_fit-1)//2)+1):
+
+                if cathode_hist[row,col] < threshold_rel*cathode_max: continue
+
+                anode_norm += anode_hist[row,col]
+                pred_norm += pred_hist_1D_shifted[row]
+                cathode_norm += cathode_hist[row,col]
+
+            chisq_temp = 0.0
+            numvals_temp = 0.0
+            for row in range(((N_ticks-1)//2)-((N_ticks_fit-1)//2), ((N_ticks-1)//2)+((N_ticks_fit-1)//2)+1):
+
+                if cathode_hist[row,col] < threshold_rel*cathode_max: continue
+
+                chisq_temp += ((pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row,col]/cathode_norm)**2) / 
+                              ((pred_uncert_hist_1D_shifted[row]/pred_norm)**2 + (cathode_uncert_hist[row,col]/cathode_norm)**2)
+                numvals_temp += 1.0
+            if chisq_temp < min_chisq:
+                min_chisq = chisq_temp
+                min_numvals = numvals_temp
+                shift_vec[col] = shift_val
+        chisq += min_chisq
+        numvals += min_numvals
                 
     return chisq, numvals, shift_vec
