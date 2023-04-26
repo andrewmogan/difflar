@@ -31,7 +31,6 @@ def diffusion_grid_scan(
                     cathode_hist[k], cathode_uncert_hist[k], 
                     DL, DT
                 )
-                print('[GRIDSCAN] temp_chisq', temp_chisq)
                 chisq += temp_chisq
                 print('[GRIDSCAN] chisq', chisq)
                 numvals += temp_numvals
@@ -54,4 +53,4 @@ def diffusion_grid_scan(
             col += 1
         row += 1
 
-    return chisq_values, min_numvals, all_shifts_result
+    return chisq_values, min_chisq, min_numvals, all_shifts_result, all_shifts_actual

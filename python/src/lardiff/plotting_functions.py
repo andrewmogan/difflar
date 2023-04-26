@@ -1,3 +1,10 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+from .consts import *
+from .waveform_functions import smear_signal, convolve, \
+     deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
+
 # Create plots illustrating signal distributions in 1D and 2D
 def make_signal_plots(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist, DL_hyp, DT_hyp, shift_vec, filename2D, filename1D):
     sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)

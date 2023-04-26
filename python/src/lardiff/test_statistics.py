@@ -67,7 +67,7 @@ def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_u
 
                 if cathode_hist[row,col] < threshold_rel*cathode_max: continue
 
-                chisq_temp += ((pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row,col]/cathode_norm)**2) / 
+                chisq_temp += ((pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row,col]/cathode_norm)**2) / \
                               ((pred_uncert_hist_1D_shifted[row]/pred_norm)**2 + (cathode_uncert_hist[row,col]/cathode_norm)**2)
                 numvals_temp += 1.0
             if chisq_temp < min_chisq:
