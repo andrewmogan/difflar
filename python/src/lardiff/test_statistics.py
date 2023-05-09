@@ -16,17 +16,20 @@ def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_u
     pred_hist = np.zeros((N_ticks, N_wires))
     pred_uncert_hist = np.zeros((N_ticks, N_wires))
     for col in range(0, N_wires):
-        sig_A_slice = sig_A_coarse[:,col]
-        sig_A_slice = sig_A_slice/sig_A_slice.sum()
-        sig_C_slice = sig_C_coarse[:,col]
-        sig_C_slice = sig_C_slice/np.real(sig_C_slice).sum()
+        sig_A_slice = sig_A_coarse[:, col]
+        sig_A_slice = sig_A_slice / sig_A_slice.sum()
+        sig_C_slice = sig_C_coarse[:, col]
+        sig_C_slice = sig_C_slice / np.real(sig_C_slice).sum()
         diffusion_kernel = deconvolve(sig_C_slice, sig_A_slice)
-        anode_slice = anode_hist[:,col]
-        anode_uncert_slice = anode_uncert_hist[:,col]
+
+        anode_slice = anode_hist[:, col]
+        anode_uncert_slice = anode_uncert_hist[:, col]
+
         pred_slice = convolve(anode_slice, diffusion_kernel)
         pred_uncert_slice = convolve(anode_uncert_slice, diffusion_kernel)
-        pred_hist[:,col] = np.real(pred_slice)
-        pred_uncert_hist[:,col] = np.real(pred_uncert_slice)
+
+        pred_hist[:, col] = np.real(pred_slice)
+        pred_uncert_hist[:, col] = np.real(pred_uncert_slice)
 
     pred_hist = fix_baseline(pred_hist, anode_hist)
     pred_uncert_hist = fix_baseline(pred_uncert_hist, anode_uncert_hist)
@@ -43,6 +46,7 @@ def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_u
     shift_vec = np.zeros((N_wires))
     for col in range(((N_wires-1)//2)-((N_wires_fit-1)//2), ((N_wires-1)//2)+((N_wires_fit-1)//2)+1):
 
+        # Skip central wire to avoid bias (I think?)
         if col == (N_wires-1)//2: continue
 
         min_chisq = np.inf
@@ -51,8 +55,8 @@ def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_u
             anode_norm = 0
             pred_norm = 0
             cathode_norm = 0
-            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:,col], shift_val)
-            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:,col], shift_val)
+            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val)
+            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val)
             for row in range(((N_ticks-1)//2)-((N_ticks_fit-1)//2), ((N_ticks-1)//2)+((N_ticks_fit-1)//2)+1):
 
                 if cathode_hist[row,col] < threshold_rel*cathode_max: continue
