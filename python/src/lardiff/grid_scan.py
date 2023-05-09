@@ -2,11 +2,11 @@ import numpy as np
 from .test_statistics import calc_chisq
 from .consts import *
 
-
-def diffusion_grid_scan(
-        DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, num_angle_bins,
-        input_signal, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
-        verbose=True):
+def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, 
+                        num_angle_bins, input_signal, 
+                        anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
+                        test_statistic='chi2',
+                        verbose=True):
 
     min_chisq = np.inf
     min_numvals = 0.0
@@ -32,15 +32,14 @@ def diffusion_grid_scan(
                     DL, DT
                 )
                 chisq += temp_chisq
-                print('[GRIDSCAN] chisq', chisq)
                 numvals += temp_numvals
-                all_shifts[k,:] = shift_vec
+                all_shifts[k, :] = shift_vec
                 if verbose:
                     print('    %d %.2f' % (k, temp_chisq))
                     with np.printoptions(precision=1, sign=' ', floatmode='fixed', suppress=True):
                         print('   ', k, shift_vec)
-            chisq_values[row,col] = chisq
-            num_values[row,col] = numvals
+            chisq_values[row, col] = chisq
+            num_values[row, col] = numvals
             if chisq < min_chisq:
                 min_chisq = chisq
                 min_numvals = numvals
