@@ -6,6 +6,29 @@ from .consts import *
 from .waveform_functions import smear_signal, convolve, \
      deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
 
+def calc_test_statistic(input_sig, 
+                        anode_hist, anode_uncert_hist, 
+                        cathode_hist, cathode_uncert_hist, 
+                        dl_hyp, dt_hyp, 
+                        test_statistic):
+
+    temp_test_stat  = None 
+    temp_num_values = None 
+    shift_vector    = None
+    if test_statistic == "chi2":
+        temp_test_stat, temp_num_values, shift_vector = calc_chisq(
+            input_sig, 
+            anode_hist, anode_uncert_hist, 
+            cathode_hist, cathode_uncert_hist, 
+            dl_hyp, dt_hyp, 
+        )
+    elif test_statistic == "invariant3":
+        print('Oops not yet implemented')
+    else:
+        raise ValueError('Invalid test_statistic argument provided')
+
+    return temp_test_stat, temp_num_values, shift_vector
+
 # Calculate one chi-squared point given value of DL and DT and 2D distributions associated with specific track data angle bin
 def calc_chisq(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist, DL_hyp, DT_hyp):
     sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)

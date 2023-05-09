@@ -6,7 +6,13 @@ from .waveform_functions import smear_signal, convolve, \
      deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
 
 # Create plots illustrating signal distributions in 1D and 2D
-def make_signal_plots(input_sig, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist, DL_hyp, DT_hyp, shift_vec, filename2D, filename1D):
+def make_signal_plots(input_sig, 
+                      anode_hist, anode_uncert_hist, 
+                      cathode_hist, cathode_uncert_hist, 
+                      DL_hyp, DT_hyp, 
+                      shift_vec, 
+                      filename2D, filename1D):
+
     sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
     sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
     sig_A_coarse = coarsen_signal(sig_A)
@@ -154,6 +160,23 @@ def make_signal_plots(input_sig, anode_hist, anode_uncert_hist, cathode_hist, ca
     f2.set_size_inches(32,16)
     f2.tight_layout()
     plt.savefig(filename1D)
+
+def make_test_statistic_plot(delta_test_statistic_values, 
+                             DL_min, DL_max, DL_step, 
+                             DT_min, DT_max, DT_step, 
+                             test_statistic='chi2',
+                             filename='plots/diffusion_test_statistic.png'):
+
+    if test_statistic == "chi2":
+        make_chisq_plot(delta_test_statistic_values, 
+                        DL_min, DL_max, DL_step, 
+                        DT_min, DT_max, DT_step, 
+                        filename)
+    elif test_statistic == "invariant3":
+        print('Oops not implemented')
+    else:
+        raise ValueError('Invalid test_statistic argument provided')
+
 
 # Make final chi-squared scan plot
 def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, filename):

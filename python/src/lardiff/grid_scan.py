@@ -1,5 +1,5 @@
 import numpy as np
-from .test_statistics import calc_chisq
+from .test_statistics import calc_chisq, calc_test_statistic
 from .consts import *
 
 def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, 
@@ -8,48 +8,59 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                         test_statistic='chi2',
                         verbose=True):
 
-    min_chisq = np.inf
+    min_test_stat = np.inf
     min_numvals = 0.0
     all_shifts_result = np.zeros((num_angle_bins, N_wires))
     all_shifts_actual = np.zeros((num_angle_bins, N_wires))
     all_shifts_test   = np.zeros((num_angle_bins, N_wires))
 
-    chisq_values = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
+    test_stat_values = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
     num_values   = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
     row = 0
+
+    if verbose:
+        print('[GRID_SCAN] Calculating test statistic', test_statistic)
 
     for DL in np.arange(DL_min, DL_max+DL_step, DL_step):
         col = 0
         for DT in np.arange(DT_min, DT_max+DT_step, DT_step):
-            chisq = 0.0
+            test_stat = 0.0
             numvals = 0.0
             all_shifts = np.zeros((num_angle_bins, N_wires))
             for k in range(0, num_angle_bins):
-                temp_chisq, temp_numvals, shift_vec = calc_chisq(
+                #temp_test_stat, temp_numvals, shift_vec = calc_test_stat(
+                #    input_signal[k], 
+                #    anode_hist[k], anode_uncert_hist[k], 
+                #    cathode_hist[k], cathode_uncert_hist[k], 
+                #    DL, DT
+                #)
+                temp_test_stat, temp_numvals, shift_vec = calc_test_statistic(
                     input_signal[k], 
                     anode_hist[k], anode_uncert_hist[k], 
                     cathode_hist[k], cathode_uncert_hist[k], 
-                    DL, DT
+                    DL, DT,
+                    test_statistic
                 )
-                chisq += temp_chisq
+                print('[GRID_SCAN] shift_vec:', shift_vec)
+                test_stat += temp_test_stat
                 numvals += temp_numvals
                 all_shifts[k, :] = shift_vec
                 if verbose:
-                    print('    %d %.2f' % (k, temp_chisq))
+                    print('    %d %.2f' % (k, temp_test_stat))
                     with np.printoptions(precision=1, sign=' ', floatmode='fixed', suppress=True):
                         print('   ', k, shift_vec)
-            chisq_values[row, col] = chisq
+            test_stat_values[row, col] = test_stat
             num_values[row, col] = numvals
-            if chisq < min_chisq:
-                min_chisq = chisq
+            if test_stat < min_test_stat:
+                min_test_stat = test_stat
                 min_numvals = numvals
                 all_shifts_result = all_shifts
             if abs(DL-DL_actual) < DL_step and abs(DT-DT_actual) < DT_step:
                 all_shifts_actual = all_shifts
             if abs(DL-DL_test) < DL_step and abs(DT-DT_test) < DT_step:
                 all_shifts_test = all_shifts
-            print('%.2f %.2f %.2f' % (DL, DT, chisq))
+            print('%.2f %.2f %.2f' % (DL, DT, test_stat))
             col += 1
         row += 1
 
-    return chisq_values, min_chisq, min_numvals, all_shifts_result, all_shifts_actual
+    return test_stat_values, min_test_stat, min_numvals, all_shifts_result, all_shifts_actual
