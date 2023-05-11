@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -12,6 +13,8 @@ def make_signal_plots(input_sig,
                       DL_hyp, DT_hyp, 
                       shift_vec, 
                       filename2D, filename1D):
+
+    hist_file_name = 'diffusion_hist_data.npz'
 
     sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
     sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
@@ -84,13 +87,6 @@ def make_signal_plots(input_sig,
         labels_wire.append((N_wires-1.0)/2.0 + i*((N_wires-1.0)/2.0))
         
     f, axes = plt.subplots(1, 7, gridspec_kw={'width_ratios': [1, 1, 1, 1, 1, 1, 1]})
-    #axes[0].imshow(anode_hist, aspect='auto', interpolation='none')
-    #axes[1].imshow(anode_uncert_hist, aspect='auto', interpolation='none')
-    #axes[2].imshow(pred_hist_shifted, aspect='auto', interpolation='none')
-    #axes[3].imshow(pred_uncert_hist_shifted, aspect='auto', interpolation='none')
-    #axes[4].imshow(cathode_hist, aspect='auto', interpolation='none')
-    #axes[5].imshow(cathode_uncert_hist, aspect='auto', interpolation='none')
-    #axes[6].imshow(chisq_hist, aspect='auto', interpolation='none')
     axes[0].imshow(np.real(sig_A), aspect='auto', interpolation='none')
     axes[1].imshow(np.real(sig_C), aspect='auto', interpolation='none')
     axes[2].imshow(np.real(sig_A_coarse), aspect='auto', interpolation='none')
@@ -114,13 +110,6 @@ def make_signal_plots(input_sig,
         axes[i].yaxis.set_major_formatter(tickformat_time_fine)
         axes[i].set_xticks(labels_wire_fine)
         axes[i].set_yticks(labels_time_fine)
-    #axes[0].set_title('Anode Signal\nMeasurement', fontsize=26)
-    #axes[1].set_title('Anode Signal\nMeasurement\nUncertainty', fontsize=26)
-    #axes[2].set_title('Cathode Signal\nPrediction', fontsize=26)
-    #axes[3].set_title('Cathode Signal\nPrediction\nUncertainty', fontsize=26)
-    #axes[4].set_title('Cathode Signal\nMeasurement', fontsize=26)
-    #axes[5].set_title('Cathode Signal\nMeasurement\nUncertainty', fontsize=26)
-    #axes[6].set_title('Local $\chi^{2}$\nContribution', fontsize=26)
     axes[0].set_title('Anode Track\nSignal Hypothesis\n(Fine)', fontsize=26)
     axes[1].set_title('Cathode Track\nSignal Hypothesis\n(Fine)', fontsize=26)
     axes[2].set_title('Anode Track\nSignal Hypothesis\n(Coarse)', fontsize=26)
@@ -132,13 +121,26 @@ def make_signal_plots(input_sig,
     f.tight_layout()
     plt.savefig(filename2D)
 
+    ######################## Relative wire plots ##############################
+    # Make relative wire plots in a 3x2 grid with the negative relative wires
+    # in the left column and the positive wires in the right column
     f2, axes2 = plt.subplots(3, 2, gridspec_kw={'width_ratios': [1, 1]})
     for h in range(0, 3):
         for k in range(0, 2):
             wire_index = int(((N_wires-1)//2)+(2*k-1)*(h+1))
-            axes2[h][k].errorbar(x=range(0, N_ticks), y=anode_hist[:,wire_index]/anode_norm[wire_index], yerr=anode_uncert_hist[:,wire_index]/anode_norm[wire_index], color='black', linewidth=2, label='Anode Measurement')
-            axes2[h][k].errorbar(x=range(0, N_ticks), y=pred_hist_shifted[:,wire_index]/pred_norm[wire_index], yerr=pred_uncert_hist_shifted[:,wire_index]/pred_norm[wire_index], color='blue', linewidth=2, label=('Cathode Prediction ($D_{L}$ = %.2f cm$^{2}$/s, $D_{T}$ = %.2f cm$^{2}$/s)' % (DL_hyp, DT_hyp)))
-            axes2[h][k].errorbar(x=range(0, N_ticks), y=cathode_hist[:,wire_index]/cathode_norm[wire_index], yerr=cathode_uncert_hist[:,wire_index]/cathode_norm[wire_index], color='red', linewidth=2, label='Cathode Measurement')
+            axes2[h][k].errorbar(x=range(0, N_ticks), 
+                                 y=anode_hist[:, wire_index] / anode_norm[wire_index], 
+                                 yerr=anode_uncert_hist[:, wire_index] / anode_norm[wire_index], 
+                                 color='black', linewidth=2, label='Anode Measurement')
+            axes2[h][k].errorbar(x=range(0, N_ticks), 
+                                 y=pred_hist_shifted[:, wire_index] / pred_norm[wire_index], 
+                                 yerr=pred_uncert_hist_shifted[:, wire_index] / pred_norm[wire_index], 
+                                 color='blue', linewidth=2, 
+                                 label=('Cathode Prediction ($D_{L}$ = %.2f cm$^{2}$/s, $D_{T}$ = %.2f cm$^{2}$/s)' % (DL_hyp, DT_hyp)))
+            axes2[h][k].errorbar(x=range(0, N_ticks), 
+                                 y=cathode_hist[:, wire_index] / cathode_norm[wire_index], 
+                                 yerr=cathode_uncert_hist[:, wire_index] / cathode_norm[wire_index], 
+                                 color='red', linewidth=2, label='Cathode Measurement')
             axes2[h][k].set(xlabel='Relative Time [$\mu s$]', ylabel='Arb. Units')
             axes2[h][k].xaxis.get_label().set_fontsize(20)
             axes2[h][k].yaxis.get_label().set_fontsize(20)
@@ -150,6 +152,14 @@ def make_signal_plots(input_sig,
                 axes2[h][k].set_xlim((-45/timeTickSF)+(N_ticks-1.0)/2.0, (10/timeTickSF)+(N_ticks-1.0)/2.0)
             if k == 1:
                 axes2[h][k].set_xlim((-10/timeTickSF)+(N_ticks-1.0)/2.0, (45/timeTickSF)+(N_ticks-1.0)/2.0)
+            if os.path.exists(hist_file_name): continue
+            hists_to_save = {
+                'anode_measurement'  : anode_hist[:, wire_index] / anode_norm[wire_index],
+                'cathode_prediction' : pred_hist_shifted[:,wire_index]/pred_norm[wire_index],
+                'cathode_measurement': cathode_hist[:, wire_index] / cathode_norm[wire_index]
+            }
+            np.savez(hist_file_name, **hists_to_save)
+            
     axes2[0][0].set_title('Relative Wire: -1', fontsize=26)
     axes2[0][1].set_title('Relative Wire: +1', fontsize=26)
     axes2[1][0].set_title('Relative Wire: -2', fontsize=26)
