@@ -171,6 +171,7 @@ def make_signal_plots(input_sig,
     f2.tight_layout()
     plt.savefig(filename1D)
 
+######################### Grid scan plots ###################################
 def make_test_statistic_plot(delta_test_statistic_values, 
                              DL_min, DL_max, DL_step, 
                              DT_min, DT_max, DT_step, 
@@ -187,7 +188,6 @@ def make_test_statistic_plot(delta_test_statistic_values,
     else:
         raise ValueError('Invalid test_statistic argument provided')
 
-
 # Make final chi-squared scan plot
 def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, filename):
     point_y, point_x = np.unravel_index(np.argmin(delta_chisq_values), delta_chisq_values.shape)
@@ -203,9 +203,13 @@ def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max,
         
     f, axes = plt.subplots(1, 1, gridspec_kw={'width_ratios': [1]})
     shw = axes.contourf(delta_chisq_values - np.amin(delta_chisq_values))
-    shw2 = axes.contour(delta_chisq_values - np.amin(delta_chisq_values), levels = [2.30, 6.17], colors=('red',), linestyles=('dashed', 'solid'), linewidths=(3,))
+    shw2 = axes.contour(delta_chisq_values - np.amin(delta_chisq_values), 
+                        levels = [2.30, 6.17], 
+                        colors=('red',), linestyles=('dashed', 'solid'), linewidths=(3,))
     shw3 = axes.plot(point_x, point_y, marker='o', markersize=15, color='red')
-    shw4 = axes.plot((100.0/DT_step)*(DT_actual-DT_min+DT_step/2.0), (100.0/DL_step)*(DL_actual-DL_min+DL_step/2.0), marker='*', markersize=20, color='fuchsia')
+    shw4 = axes.plot((100.0 / DT_step) * (DT_actual - DT_min + DT_step / 2.0), 
+                     (100.0 / DL_step) * (DL_actual - DL_min + DL_step / 2.0), 
+                     marker='*', markersize=20, color='fuchsia')
     axes.set_xlabel('$D_{T}$ [cm$^{2}$/s]', fontsize=36, labelpad=15)
     axes.set_ylabel('$D_{L}$ [cm$^{2}$/s]', fontsize=36, labelpad=15)
     axes.tick_params(axis='x', labelsize=28)
