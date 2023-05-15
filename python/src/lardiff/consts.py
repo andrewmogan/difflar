@@ -22,6 +22,12 @@ N_ticks = 401
 N_ticks_fit = 321
 N_ticks_fine = 5*N_ticks
 
+# Determine loop ranges that avoid wires/ticks with artifacts
+N_wires_start = ((N_wires - 1) // 2) - ((N_wires_fit - 1) // 2)
+N_wires_end   = ((N_wires - 1) // 2) + ((N_wires_fit - 1) // 2) + 1
+N_ticks_start = ((N_ticks - 1) // 2) - ((N_ticks_fit - 1) // 2)
+N_ticks_end   = ((N_ticks - 1) // 2) + ((N_ticks_fit - 1) // 2) + 1
+
 offset_distance = 14.5
 AC_distance = 148.275
 ticks_drift_A = offset_distance / driftVel / timeTickSF
