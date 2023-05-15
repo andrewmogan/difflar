@@ -40,6 +40,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                 numvals += temp_numvals
                 all_shifts[k, :] = shift_vec
                 if verbose:
+                    print('test_stat', temp_test_stat)
                     print('    %d %.2f' % (k, temp_test_stat))
                     with np.printoptions(precision=1, sign=' ', floatmode='fixed', suppress=True):
                         print('   ', k, shift_vec)
