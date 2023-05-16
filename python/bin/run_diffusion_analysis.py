@@ -109,6 +109,10 @@ if __name__ == "__main__":
                         type=float, nargs=3, default=[7.0,10.0,0.25], help='''\
                         Three floats corresponding to (min, max, step) DT scan range in cm^2/s
                         Default values: [7.0,10.0,0.25]''')
+    parser.add_argument("--test_statistic", 
+                        type=str, nargs=1, default='chi2', help='''\
+                        Which test statistic to use for evaluating statistical uncertainties
+                        Default value: chi2''')
     parser.add_argument("--is_data", 
                         type=bool, nargs=1, default=False, help='''\
                         Bool for determinig whether to use data parameters, particularly drift velocity. 
