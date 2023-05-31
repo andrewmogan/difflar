@@ -167,9 +167,12 @@ def make_signal_plots(input_sig,
             # Save to file for offline use
             if os.path.exists(hist_file_name): continue
             hists_to_save = {
-                'anode_measurement'  : anode_hist[:, wire_index] / anode_norm[wire_index],
-                'cathode_prediction' : pred_hist_shifted[:,wire_index]/pred_norm[wire_index],
-                'cathode_measurement': cathode_hist[:, wire_index] / cathode_norm[wire_index]
+                #'anode_measurement'  : anode_hist[:, wire_index] / anode_norm[wire_index],
+                #'cathode_prediction' : pred_hist_shifted[:,wire_index]/pred_norm[wire_index],
+                #'cathode_measurement': cathode_hist[:, wire_index] / cathode_norm[wire_index]
+                'anode_measurement'  : anode_hist,
+                'cathode_prediction' : pred_hist_shifted,
+                'cathode_measurement': cathode_hist 
             }
             np.savez(hist_file_name, **hists_to_save)
             
