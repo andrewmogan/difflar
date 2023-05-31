@@ -47,15 +47,16 @@ def calc_test_statistic(input_sig,
     pred_hist = fix_baseline(pred_hist, anode_hist)
     pred_uncert_hist = fix_baseline(pred_uncert_hist, anode_uncert_hist)
 
-    #cathode_max = 0.0
-    #for col in range(N_wires_start, N_wires_end):
-    #    for row in range(N_ticks_start, N_ticks_end):
-    #        if col == (N_wires - 1) // 2: continue
-    #        if cathode_hist[row, col] < cathode_max: continue
-    #        cathode_max = cathode_hist[row, col]
-    print('woo')
-    cathode_max = np.amax(cathode_hist[N_ticks_start:N_ticks_end, N_wires_start:N_wires_end])
-    print('cathode_max', cathode_max)
+    cathode_max = 0.0
+    for col in range(N_wires_start, N_wires_end):
+        for row in range(N_ticks_start, N_ticks_end):
+            if col == (N_wires - 1) // 2: continue
+            if cathode_hist[row, col] < cathode_max: continue
+            cathode_max = cathode_hist[row, col]
+
+    ### TODO Slicing would be faster, but how to ignore the central wire while slicing?
+    ### Implement a range of indices instead of N_wires_start etc.?
+    #cathode_max = np.amax(cathode_hist[N_ticks_start:N_ticks_end, N_wires_start:N_wires_end])
 
     if test_statistic == "chi2":
         print('Calc chi2')
@@ -79,6 +80,7 @@ def calc_test_statistic(input_sig,
 def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max):
     chisq = 0.0
     numvals = 0.0
+    # TODO Should shift_vec be of length N_wires or range(N_wires_start, N_wires_end)?
     shift_vec = np.zeros((N_wires))
     for col in range(N_wires_start, N_wires_end):
 
@@ -118,8 +120,8 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
 
         print('min_numvals', min_numvals)
         chisq += min_chisq
-        #numvals += min_numvals
-        numvals += 1
+        numvals += min_numvals
+        #numvals += 1
                 
     print('numvals', numvals)
     print('chisq_count', chisq_count)
