@@ -47,12 +47,15 @@ def calc_test_statistic(input_sig,
     pred_hist = fix_baseline(pred_hist, anode_hist)
     pred_uncert_hist = fix_baseline(pred_uncert_hist, anode_uncert_hist)
 
-    cathode_max = 0.0
-    for col in range(N_wires_start, N_wires_end):
-        for row in range(N_ticks_start, N_ticks_end):
-            if col == (N_wires-1)//2: continue
-            if cathode_hist[row,col] < cathode_max: continue
-            cathode_max = cathode_hist[row,col]
+    #cathode_max = 0.0
+    #for col in range(N_wires_start, N_wires_end):
+    #    for row in range(N_ticks_start, N_ticks_end):
+    #        if col == (N_wires - 1) // 2: continue
+    #        if cathode_hist[row, col] < cathode_max: continue
+    #        cathode_max = cathode_hist[row, col]
+    print('woo')
+    cathode_max = np.amax(cathode_hist[N_ticks_start:N_ticks_end, N_wires_start:N_wires_end])
+    print('cathode_max', cathode_max)
 
     if test_statistic == "chi2":
         print('Calc chi2')
@@ -84,6 +87,7 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
 
         min_chisq = np.inf
         min_numvals = 0.0
+        chisq_count = 0
         for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
             #anode_norm = 0
             pred_norm = 0
@@ -92,28 +96,34 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
             pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val)
             for row in range(N_ticks_start, N_ticks_end):
                 # Exclude values below threshold
-                if cathode_hist[row,col] < threshold_rel*cathode_max: continue
+                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
 
                 #anode_norm += anode_hist[row,col]
                 pred_norm += pred_hist_1D_shifted[row]
-                cathode_norm += cathode_hist[row,col]
+                cathode_norm += cathode_hist[row, col]
 
             chisq_temp = 0.0
             numvals_temp = 0.0
             for row in range(N_ticks_start, N_ticks_end):
-                if cathode_hist[row,col] < threshold_rel*cathode_max: continue
+                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
 
                 chisq_temp += ((pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row,col]/cathode_norm)**2) / \
                               ((pred_uncert_hist_1D_shifted[row]/pred_norm)**2 + (cathode_uncert_hist[row,col]/cathode_norm)**2)
+                chisq_count += 1
                 numvals_temp += 1.0
             if chisq_temp < min_chisq:
                 min_chisq = chisq_temp
                 min_numvals = numvals_temp
                 shift_vec[col] = shift_val
 
+        print('min_numvals', min_numvals)
         chisq += min_chisq
-        numvals += min_numvals
+        #numvals += min_numvals
+        numvals += 1
                 
+    print('numvals', numvals)
+    print('chisq_count', chisq_count)
+    print('shift vec:', shift_vec)
     return chisq, numvals, shift_vec
 
 ############### Invariant3 test ####################
