@@ -35,6 +35,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                     DL, DT,
                     test_statistic
                 )
+                print('[GRID_SCAN] temp_test_stat type:', type(temp_test_stat))
                 print('[GRID_SCAN] shift_vec:', shift_vec)
                 test_stat += temp_test_stat
                 numvals += temp_numvals
