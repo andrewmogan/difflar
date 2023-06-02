@@ -8,13 +8,14 @@ from scipy import stats
 from scipy import ndimage
 from numba import jit
 import uproot
+import time
 
 from lardiff.input_checks import check_input_filename, check_input_range
 from lardiff.waveform_functions import create_signal
 from lardiff.consts import *
 from lardiff.grid_scan import diffusion_grid_scan
 
-def measure_diffusion(input_filename, angle_range, dl_range, dt_range, is_data=False):
+def measure_diffusion(input_filename, angle_range, dl_range, dt_range, test_statistic, is_data=False):
     input_file = uproot.open(input_filename)
 
     # angle_range is of the form [min, max, step]
@@ -57,10 +58,6 @@ def measure_diffusion(input_filename, angle_range, dl_range, dt_range, is_data=F
         cathode_uncert_hist_nonzero_indices = np.nonzero(cathode_uncert_hist)
         cathode_hist_nonzero = cathode_hist[cathode_hist_nonzero_indices]
         cathode_uncert_hist_nonzero = cathode_uncert_hist[cathode_uncert_hist_nonzero_indices]
-        print('anode_hist_nonzero', anode_hist_nonzero)
-        print('anode_uncert_hist_nonzero', anode_uncert_hist_nonzero)
-        print('cathode_hist_nonzero', cathode_hist_nonzero)
-        print('cathode_uncert_hist_nonzero', cathode_uncert_hist_nonzero)
 
     DL_min  = dl_range[0]
     DL_max  = dl_range[1]
@@ -70,28 +67,21 @@ def measure_diffusion(input_filename, angle_range, dl_range, dt_range, is_data=F
     DT_max  = dt_range[1]
     DT_step = dt_range[2]
 
-    #min_chisq = np.inf
-    #min_numvals = 0.0
-    #all_shifts_result = np.zeros((num_angle_bins, N_wires))
-    #all_shifts_actual = np.zeros((num_angle_bins, N_wires))
-    #all_shifts_test   = np.zeros((num_angle_bins, N_wires))
-
-    #chisq_values = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
-    #num_values   = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
-    #row = 0
-
-    chisq_values, min_numvals, all_shifts_result = diffusion_grid_scan(
+    test_statistic_values, min_test_statistic, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
         DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, num_angle_bins,
-        input_signal, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist
+        input_signal, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
+        test_statistic=test_statistic
     )
 
     zoom_factor = 100
-    delta_chisq_values = ndimage.zoom(chisq_values - np.amin(chisq_values), zoom_factor)
-    point_y, point_x = np.unravel_index(np.argmin(delta_chisq_values), delta_chisq_values.shape)
+    delta_test_statistic_values = ndimage.zoom(test_statistic_values - np.amin(test_statistic_values), zoom_factor)
+    point_y, point_x = np.unravel_index(np.argmin(delta_test_statistic_values), delta_test_statistic_values.shape)
     DL_result = (DL_step*point_y/zoom_factor) + DL_min-DL_step/2.0
     DT_result = (DT_step*point_x/zoom_factor) + DT_min-DT_step/2.0
 
     print('DL, DT:', DL_result, DT_result)
+    print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
+    print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic/(min_numvals-2.0))))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -132,7 +122,13 @@ if __name__ == "__main__":
     except argparse.ArgumentTypeError as e:
         parser.error(str(e))
 
-    measure_diffusion(args.input_filename, args.angle_range, args.dl_range, args.dt_range, args.is_data)
+    start_time = time.time()
+
+    measure_diffusion(args.input_filename, args.angle_range, args.dl_range, args.dt_range, args.test_statistic, args.is_data)
+
+    elapsed_time = time.time() - start_time
+
+    print("Elapsed time:", elapsed_time, "seconds")
 
 
 
