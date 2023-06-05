@@ -2,6 +2,7 @@ import numpy as np
 from .test_statistics import calc_chisq, calc_test_statistic
 from .consts import *
 
+#@profile
 def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, 
                         num_angle_bins, input_signal, 
                         anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
