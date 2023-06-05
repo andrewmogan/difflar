@@ -200,7 +200,11 @@ def make_test_statistic_plot(delta_test_statistic_values,
                         DT_min, DT_max, DT_step, 
                         filename)
     elif test_statistic == "invariant3":
-        print('Oops not implemented')
+        #print('Oops not implemented')
+        make_chisq_plot(delta_test_statistic_values, 
+                        DL_min, DL_max, DL_step, 
+                        DT_min, DT_max, DT_step, 
+                        filename)
     else:
         raise ValueError('Invalid test_statistic argument provided')
 

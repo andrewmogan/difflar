@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import fftpack
 from scipy import stats
+from numba import jit
 
 from functools import lru_cache
 from scipy.stats import rv_continuous, chi2, ttest_ind, chisquare
@@ -9,7 +10,8 @@ from scipy.optimize import root_scalar
 
 from .consts import *
 from .waveform_functions import smear_signal, convolve, \
-     deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
+     deconvolve, coarsen_signal, fix_baseline, shift_signal_1D, \
+     shift_signal_1D_fast
 
 def calc_test_statistic(input_sig, 
                         anode_hist, anode_uncert_hist, 
@@ -77,6 +79,8 @@ def calc_test_statistic(input_sig,
 
 ############# Chi^2 test ################
 # Calculate one chi-squared point given value of DL and DT and 2D distributions associated with specific track data angle bin
+#@profile
+#@jit(nopython=True)
 def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max):
     chisq = 0.0
     numvals = 0.0
@@ -94,8 +98,8 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
             #anode_norm = 0
             pred_norm = 0
             cathode_norm = 0
-            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val)
-            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val)
+            pred_hist_1D_shifted = shift_signal_1D_fast(pred_hist[:, col], shift_val)
+            pred_uncert_hist_1D_shifted = shift_signal_1D_fast(pred_uncert_hist[:, col], shift_val)
             for row in range(N_ticks_start, N_ticks_end):
                 # Exclude values below threshold
                 if cathode_hist[row, col] < threshold_rel * cathode_max: continue
@@ -129,26 +133,62 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
     return chisq, numvals, shift_vec
 
 ############### Invariant3 test ####################
-# Utility functions taken from listings in Lukas' paper; see
-# https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.113008 
 def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max):
-
+    invar3 = 0.0
+    numvals = 0.0
+    # TODO Should shift_vec be of length N_wires or range(N_wires_start, N_wires_end)?
     shift_vec = np.zeros((N_wires))
+    z_scores = np.array([])
+    for col in range(N_wires_start, N_wires_end):
 
+        # Skip central wire to avoid bias (I think?)
+        if col == (N_wires-1)//2: continue
+
+        min_invar3 = np.inf
+        min_numvals = 0.0
+        invar3_count = 0
+        #for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
+        for shift_val in np.arange(0, 1):
+            pred_norm = 0
+            cathode_norm = 0
+            pred_hist_1D_shifted = shift_signal_1D_fast(pred_hist[:, col], shift_val)
+            pred_uncert_hist_1D_shifted = shift_signal_1D_fast(pred_uncert_hist[:, col], shift_val)
+            above_threshold_count = 0
+            for row in range(N_ticks_start, N_ticks_end):
+                # Exclude values below threshold
+                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+
+                pred_norm += pred_hist_1D_shifted[row]
+                cathode_norm += cathode_hist[row, col]
+
+                above_threshold_count += 1
+
+            print('Values above threshold:', above_threshold_count)
+            invar3_temp = 0.0
+            numvals_temp = 0.0
+            z_scores = np.zeros(above_threshold_count)
+            above_threshold_count = 0
+            for row in range(N_ticks_start, N_ticks_end):
+                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+
+                sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
+                sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
+                sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
+
+                z_score = (pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row, col]/cathode_norm) / sigma
+                z_scores[above_threshold_count] = z_score
+                above_threshold_count += 1
+
+            print('Above thresh count', above_threshold_count)
+
+    print('z_scores shape:', z_scores.shape)
     dist = lambda x: invariant3(x, alpha=2/3, fast=False)
-
-    sigma_1 = np.std(pred_hist)
-    sigma_2 = np.std(cathode_hist)
-    sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
-
-    print('shape pred_hist', pred_hist.shape)
-    print('shape cathode_hist', cathode_hist.shape)
-    z_scores = (pred_hist - cathode_hist) / sigma
-    num_values = len(z_scores)
     invar3 = dist(z_scores)
+    print('invar3:', invar3)
+    return invar3, numvals, shift_vec
 
-    return invar3, num_values, shift_vec
-
+############### Invariant3 Functions from the paper #################
+# https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.113008 #
 class Bee(rv_continuous):
     def _cdf(self, x, df):
         return erf(x/np.sqrt(2))**df
