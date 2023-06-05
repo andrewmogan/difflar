@@ -83,12 +83,20 @@ def measure_diffusion(input_filename, angle_range, dl_range, dt_range, test_stat
     print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
     print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic/(min_numvals-2.0))))
 
+    np.savez('diffusion_results.npy', 
+             delta_test_statistic_values=delta_test_statistic_values,
+             angle_range = [angle_range[0], angle_range[1], angle_range[2]],
+             dl_range = [DL_min, DL_max, DL_step],
+             dt_range = [DT_min, DT_max, DT_step],
+             test_stat = test_statistic
+    )
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_filename", type=str, #nargs=1,
                         help="Input .root file from WaveformStudy")
     parser.add_argument("--angle_range", 
-                        type=int, nargs=3, default=[26,80,2], help='''\
+                        type=int, nargs=3, default=[20,80,2], help='''\
                         Three ints corresponding to (min, max, step) of angle scan range in degrees
                         Default values: [26,80,2]''')
     parser.add_argument("--dl_range", 
