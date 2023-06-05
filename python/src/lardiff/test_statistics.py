@@ -17,7 +17,8 @@ def calc_test_statistic(input_sig,
                         anode_hist, anode_uncert_hist, 
                         cathode_hist, cathode_uncert_hist, 
                         DL_hyp, DT_hyp, 
-                        test_statistic):
+                        test_statistic='chi2',
+                        interpolation='scipy'):
 
     temp_test_stat  = None 
     temp_num_values = None 
@@ -64,13 +65,15 @@ def calc_test_statistic(input_sig,
         print('Calc chi2')
         temp_test_stat, temp_num_values, shift_vector = calc_chisq(
             pred_hist, pred_uncert_hist,
-            cathode_hist, cathode_uncert_hist, cathode_max
+            cathode_hist, cathode_uncert_hist, cathode_max,
+            interpolation
         )
     elif test_statistic == "invariant3":
         print('Calc invar3')
         temp_test_stat, temp_num_values, shift_vector = calc_invariant3(
             pred_hist, pred_uncert_hist,
-            cathode_hist, cathode_uncert_hist, cathode_max
+            cathode_hist, cathode_uncert_hist, cathode_max,
+            interpolation
         )
     else:
         raise ValueError('Invalid test_statistic argument provided')
@@ -81,7 +84,7 @@ def calc_test_statistic(input_sig,
 # Calculate one chi-squared point given value of DL and DT and 2D distributions associated with specific track data angle bin
 #@profile
 #@jit(nopython=True)
-def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max):
+def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max, interpolation='scipy'):
     chisq = 0.0
     numvals = 0.0
     # TODO Should shift_vec be of length N_wires or range(N_wires_start, N_wires_end)?
@@ -98,8 +101,8 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
             #anode_norm = 0
             pred_norm = 0
             cathode_norm = 0
-            pred_hist_1D_shifted = shift_signal_1D_fast(pred_hist[:, col], shift_val)
-            pred_uncert_hist_1D_shifted = shift_signal_1D_fast(pred_uncert_hist[:, col], shift_val)
+            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
+            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
             for row in range(N_ticks_start, N_ticks_end):
                 # Exclude values below threshold
                 if cathode_hist[row, col] < threshold_rel * cathode_max: continue
@@ -133,7 +136,7 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
     return chisq, numvals, shift_vec
 
 ############### Invariant3 test ####################
-def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max):
+def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max, interpolation='scipy'):
     invar3 = 0.0
     numvals = 0.0
     # TODO Should shift_vec be of length N_wires or range(N_wires_start, N_wires_end)?
@@ -151,8 +154,8 @@ def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hi
         for shift_val in np.arange(0, 1):
             pred_norm = 0
             cathode_norm = 0
-            pred_hist_1D_shifted = shift_signal_1D_fast(pred_hist[:, col], shift_val)
-            pred_uncert_hist_1D_shifted = shift_signal_1D_fast(pred_uncert_hist[:, col], shift_val)
+            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
+            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
             above_threshold_count = 0
             for row in range(N_ticks_start, N_ticks_end):
                 # Exclude values below threshold

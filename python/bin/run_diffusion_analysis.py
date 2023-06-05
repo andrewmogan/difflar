@@ -15,12 +15,21 @@ from lardiff.waveform_functions import create_signal
 from lardiff.consts import *
 from lardiff.grid_scan import diffusion_grid_scan
 
-def measure_diffusion(input_filename, angle_range, dl_range, dt_range, test_statistic, is_data=False):
+def print_args(args, defaults):
+    print('Running diffusion analysis with configuration:')
+    for arg in vars(args):
+        value = getattr(args, arg)
+        default = getattr(defaults, arg)
+        print('\t', arg, value, '(default:', default, ')')
+
+def measure_diffusion(input_filename, 
+                      angle_range, dl_range, dt_range, 
+                      test_statistic='chi2', interpolation='scipy', 
+                      is_data=False):
     input_file = uproot.open(input_filename)
 
     # angle_range is of the form [min, max, step]
     angle_bins = [[x, x + angle_range[2]] for x in range(angle_range[0], angle_range[1], angle_range[2])]
-    print('angle_bins', angle_bins)
     num_angle_bins = len(angle_bins)
     angle_sim_step = 0.1
 
@@ -70,7 +79,8 @@ def measure_diffusion(input_filename, angle_range, dl_range, dt_range, test_stat
     test_statistic_values, min_test_statistic, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
         DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, num_angle_bins,
         input_signal, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
-        test_statistic=test_statistic
+        test_statistic=test_statistic,
+        interpolation=interpolation
     )
 
     zoom_factor = 100
@@ -83,17 +93,18 @@ def measure_diffusion(input_filename, angle_range, dl_range, dt_range, test_stat
     print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
     print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic/(min_numvals-2.0))))
 
-    np.savez('diffusion_results.npy', 
+    np.savez('diffusion_results', 
              delta_test_statistic_values=delta_test_statistic_values,
              angle_range = [angle_range[0], angle_range[1], angle_range[2]],
              dl_range = [DL_min, DL_max, DL_step],
              dt_range = [DT_min, DT_max, DT_step],
-             test_stat = test_statistic
+             test_stat = test_statistic,
+             interpolation = interpolation
     )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_filename", type=str, #nargs=1,
+    parser.add_argument("--input_filename", type=str, 
                         help="Input .root file from WaveformStudy")
     parser.add_argument("--angle_range", 
                         type=int, nargs=3, default=[20,80,2], help='''\
@@ -108,14 +119,22 @@ if __name__ == "__main__":
                         Three floats corresponding to (min, max, step) DT scan range in cm^2/s
                         Default values: [7.0,10.0,0.25]''')
     parser.add_argument("--test_statistic", 
-                        type=str, nargs=1, default='chi2', help='''\
+                        type=str, default='chi2', help='''\
                         Which test statistic to use for evaluating statistical uncertainties
                         Default value: chi2''')
+    parser.add_argument("--interpolation", 
+                        type=str, default='scipy', help='''\
+                        Which interpolation to use when shifting predicted histograms. Scipy uses
+                        a cubic interpolation, while numpy uses a faster, less accurate linear interpolation.
+                        Default value: scipy''')
     parser.add_argument("--is_data", 
-                        type=bool, nargs=1, default=False, help='''\
+                        type=bool, default=False, help='''\
                         Bool for determinig whether to use data parameters, particularly drift velocity. 
                         Default value: False.''')
+
     args = parser.parse_args()
+    defaults = parser.parse_args([])
+    print_args(args, defaults)
 
     # Input checking 
     try:
@@ -132,7 +151,13 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    measure_diffusion(args.input_filename, args.angle_range, args.dl_range, args.dt_range, args.test_statistic, args.is_data)
+    measure_diffusion(args.input_filename, 
+                      args.angle_range, 
+                      args.dl_range, 
+                      args.dt_range, 
+                      args.test_statistic, 
+                      args.interpolation,
+                      args.is_data)
 
     elapsed_time = time.time() - start_time
 
