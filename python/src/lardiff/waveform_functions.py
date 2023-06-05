@@ -3,6 +3,7 @@ import scipy.interpolate as interp
 from scipy import fftpack
 from scipy import stats
 from numba import jit
+from numba import float64
 from .consts import *
 
 # Convolve two 1D or 2D distributions (order does not matter)
@@ -77,6 +78,13 @@ def coarsen_signal(input):
 def shift_signal_1D(input, shift_val):
     input_interp = interp.interp1d(np.arange(input.size), input, fill_value='extrapolate', kind='cubic')
     result = input_interp(np.arange(input.size)-shift_val)
+    return result
+
+@jit(nopython=True)
+def shift_signal_1D_fast(input, shift_val):
+    size = input.size
+    input_interp = np.interp(np.arange(size), np.arange(size), input)
+    result = np.interp(np.arange(size) - shift_val, np.arange(size), input_interp)
     return result
 
 # Normalize 1D distribution and associated uncertainty (use is experimental)
