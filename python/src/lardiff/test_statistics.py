@@ -10,8 +10,7 @@ from scipy.optimize import root_scalar
 
 from .consts import *
 from .waveform_functions import smear_signal, convolve, \
-     deconvolve, coarsen_signal, fix_baseline, shift_signal_1D, \
-     shift_signal_1D_fast
+     deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
 
 def calc_test_statistic(input_sig, 
                         anode_hist, anode_uncert_hist, 
