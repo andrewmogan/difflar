@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,6 +15,7 @@ from lardiff.input_checks import check_input_filename, check_input_range
 from lardiff.waveform_functions import create_signal
 from lardiff.consts import *
 from lardiff.grid_scan import diffusion_grid_scan
+from lardiff.plotting_functions import make_test_statistic_plot
 
 def print_args(args, defaults):
     print('Running diffusion analysis with configuration:')
@@ -93,14 +95,25 @@ def measure_diffusion(input_filename,
     print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
     print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic/(min_numvals-2.0))))
 
-    np.savez('diffusion_results', 
+    current_time = datetime.datetime.now().strftime('%m%d%Y%H%M%S')
+    test_statistic_file_name = 'plots/diffusion_{}_{}.png'.format(test_statistic, current_time)
+    make_test_statistic_plot(delta_test_statistic_values, 
+                             DL_min, DL_max, DL_step, 
+                             DT_min, DT_max, DT_step, 
+                             test_statistic=test_statistic,
+                             filename=test_statistic_file_name)
+    print('Test statistic plot saved to', test_statistic_file_name)
+
+    data_file_name = 'output_data/diffusion_results_{}.npz'.format(current_time)
+    np.savez(data_file_name, 
              delta_test_statistic_values=delta_test_statistic_values,
              angle_range = [angle_range[0], angle_range[1], angle_range[2]],
              dl_range = [DL_min, DL_max, DL_step],
              dt_range = [DT_min, DT_max, DT_step],
-             test_stat = test_statistic,
+             test_statistic = test_statistic,
              interpolation = interpolation
     )
+    print('Data file saved to', data_file_name)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
