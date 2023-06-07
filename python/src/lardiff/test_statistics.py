@@ -73,6 +73,12 @@ def calc_test_statistic(input_sig,
             pred_hist, pred_uncert_hist,
             cathode_hist, cathode_uncert_hist, cathode_max,
             interpolation
+    elif test_statistic == "invariant3_alt":
+        print('Calc invar3 alt')
+        temp_test_stat, temp_num_values, shift_vector = calc_invariant3_alt(
+            pred_hist, pred_uncert_hist,
+            cathode_hist, cathode_uncert_hist, cathode_max,
+            interpolation
         )
     else:
         raise ValueError('Invalid test_statistic argument provided')
@@ -173,11 +179,71 @@ def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hi
             for row in range(N_ticks_start, N_ticks_end):
                 if cathode_hist[row, col] < threshold_rel * cathode_max: continue
 
-                sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
-                sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
+                #sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
+                #sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
+                sigma_1 = np.std(pred_uncert_hist_1D_shifted)
+                sigma_2 = np.std(cathode_uncert_hist[:, col])
                 sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
 
-                z_score = (pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row, col]/cathode_norm) / sigma
+                #z_score = (pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row, col]/cathode_norm) / sigma
+                z_score = (pred_hist_1D_shifted[row] - cathode_hist[row, col]) / sigma
+                z_scores[above_threshold_count] = z_score
+                above_threshold_count += 1
+
+            print('Above thresh count', above_threshold_count)
+
+    print('z_scores shape:', z_scores.shape)
+    dist = lambda x: invariant3(x, alpha=2/3, fast=False)
+    invar3 = dist(z_scores)
+    print('invar3:', invar3)
+    return invar3, numvals, shift_vec
+
+def calc_invariant3_alt(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max, interpolation='scipy'):
+    invar3 = 0.0
+    numvals = 0.0
+    # TODO Should shift_vec be of length N_wires or range(N_wires_start, N_wires_end)?
+    shift_vec = np.zeros((N_wires))
+    z_scores = np.array([])
+    for col in range(N_wires_start, N_wires_end):
+
+        # Skip central wire to avoid bias (I think?)
+        if col == (N_wires-1)//2: continue
+
+        min_invar3 = np.inf
+        min_numvals = 0.0
+        invar3_count = 0
+        #for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
+        for shift_val in np.arange(0, 1):
+            pred_norm = 0
+            cathode_norm = 0
+            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
+            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
+            above_threshold_count = 0
+            for row in range(N_ticks_start, N_ticks_end):
+                # Exclude values below threshold
+                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+
+                pred_norm += pred_hist_1D_shifted[row]
+                cathode_norm += cathode_hist[row, col]
+
+                above_threshold_count += 1
+
+            print('Values above threshold:', above_threshold_count)
+            invar3_temp = 0.0
+            numvals_temp = 0.0
+            z_scores = np.zeros(above_threshold_count)
+            above_threshold_count = 0
+            for row in range(N_ticks_start, N_ticks_end):
+                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+
+                #sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
+                #sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
+                sigma_1 = np.std(pred_uncert_hist_1D_shifted)
+                sigma_2 = np.std(cathode_uncert_hist[:, col])
+                sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
+
+                #z_score = (pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row, col]/cathode_norm) / sigma
+                z_score = (pred_hist_1D_shifted[row] - cathode_hist[row, col]) / sigma
                 z_scores[above_threshold_count] = z_score
                 above_threshold_count += 1
 
