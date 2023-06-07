@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument("--input_filename", type=str, 
                         help="Input .root file from WaveformStudy")
     parser.add_argument('-c', '--config', type=str, 
-                        default='{}/config/default.yaml'.format(LARDIFF_DIR),
+                        default='{}/config/default_mc.yaml'.format(LARDIFF_DIR),
                         help='Path to YAML config file')
     
     args = parser.parse_args()
