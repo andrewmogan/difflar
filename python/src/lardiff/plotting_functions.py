@@ -188,11 +188,16 @@ def make_signal_plots(input_sig,
     plt.savefig(filename1D)
 
 ######################### Grid scan plots ###################################
-def make_test_statistic_plot(delta_test_statistic_values, 
-                             DL_min, DL_max, DL_step, 
-                             DT_min, DT_max, DT_step, 
-                             test_statistic='chi2',
+def make_test_statistic_plot(delta_test_statistic_values, config, 
                              filename='plots/diffusion_test_statistic.png'):
+
+    DL_min  = config['DL_min']
+    DL_max  = config['DL_max']
+    DL_step = config['DL_step']
+    DT_min  = config['DT_min']
+    DT_max  = config['DT_max']
+    DT_step = config['DT_step']
+    test_statistic = config['test_statistic']
 
     if test_statistic == "chi2":
         make_chisq_plot(delta_test_statistic_values, 
