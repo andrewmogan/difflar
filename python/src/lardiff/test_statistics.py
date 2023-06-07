@@ -73,6 +73,7 @@ def calc_test_statistic(input_sig,
             pred_hist, pred_uncert_hist,
             cathode_hist, cathode_uncert_hist, cathode_max,
             interpolation
+        )
     elif test_statistic == "invariant3_alt":
         print('Calc invar3 alt')
         temp_test_stat, temp_num_values, shift_vector = calc_invariant3_alt(
@@ -130,14 +131,9 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
                 min_numvals = numvals_temp
                 shift_vec[col] = shift_val
 
-        print('min_numvals', min_numvals)
         chisq += min_chisq
         numvals += min_numvals
-        #numvals += 1
                 
-    print('numvals', numvals)
-    print('chisq_count', chisq_count)
-    print('shift vec:', shift_vec)
     return chisq, numvals, shift_vec
 
 ############### Invariant3 test ####################
@@ -171,7 +167,6 @@ def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hi
 
                 above_threshold_count += 1
 
-            print('Values above threshold:', above_threshold_count)
             invar3_temp = 0.0
             numvals_temp = 0.0
             z_scores = np.zeros(above_threshold_count)
@@ -190,7 +185,6 @@ def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hi
                 z_scores[above_threshold_count] = z_score
                 above_threshold_count += 1
 
-            print('Above thresh count', above_threshold_count)
 
     print('z_scores shape:', z_scores.shape)
     dist = lambda x: invariant3(x, alpha=2/3, fast=False)
@@ -228,7 +222,6 @@ def calc_invariant3_alt(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncer
 
                 above_threshold_count += 1
 
-            print('Values above threshold:', above_threshold_count)
             invar3_temp = 0.0
             numvals_temp = 0.0
             z_scores = np.zeros(above_threshold_count)
@@ -246,8 +239,6 @@ def calc_invariant3_alt(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncer
                 z_score = (pred_hist_1D_shifted[row] - cathode_hist[row, col]) / sigma
                 z_scores[above_threshold_count] = z_score
                 above_threshold_count += 1
-
-            print('Above thresh count', above_threshold_count)
 
     print('z_scores shape:', z_scores.shape)
     dist = lambda x: invariant3(x, alpha=2/3, fast=False)

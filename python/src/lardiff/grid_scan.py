@@ -8,7 +8,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                         anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
                         test_statistic='chi2',
                         interpolation='scipy',
-                        verbose=True):
+                        verbose=False):
 
     min_test_stat = np.inf
     min_numvals = 0.0
@@ -38,8 +38,6 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                     test_statistic,
                     interpolation=interpolation
                 )
-                print('[GRID_SCAN] temp_test_stat type:', type(temp_test_stat))
-                print('[GRID_SCAN] shift_vec:', shift_vec)
                 test_stat += temp_test_stat
                 numvals += temp_numvals
                 all_shifts[k, :] = shift_vec
