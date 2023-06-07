@@ -1,0 +1,18 @@
+# NOTE: This config is to be used for quick validation tests, not for an actual 
+# measurement. It uses a single angle bin, coarse diffusion constant binning, 
+# and linear interpolation in numpy.
+DL_min: 3.5
+DL_max: 4.5
+DL_step: 0.50
+
+DT_min: 7.5
+DT_max: 9.5
+DT_step: 0.5
+
+angle_min: 48
+angle_max: 50
+angle_step: 2
+
+test_statistic: 'chi2'
+interpolation: 'numpy'
+isdata: False
