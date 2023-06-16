@@ -60,10 +60,10 @@ def create_signal(angles):
 
 # Smear input 2D distribution to simulate action of diffusion (both longitudinal and transverse)
 def smear_signal(input, ticks_drift, DL_hyp, DT_hyp):
-    sigmaT = np.sqrt(2.0*DL_hyp*timeTickSF*ticks_drift)/1000.0/driftVel;
-    sigmaW = np.sqrt(2.0*DT_hyp*timeTickSF*ticks_drift)/1000.0/wirePitch;
+    sigmaT = np.sqrt(2.0 * DL_hyp * timeTickSF * ticks_drift) / 1000.0 / driftVel;
+    sigmaW = np.sqrt(2.0 * DT_hyp * timeTickSF * ticks_drift) / 1000.0 / wirePitch;
     X_fine, Y_fine = np.ogrid[0:N_ticks_fine, 0:N_wires_fine]
-    gauss = stats.norm.pdf(X_fine, (N_ticks_fine-1.0)/2.0, (sigmaT/timeTickSF)*(N_ticks_fine/N_ticks))*stats.norm.pdf(Y_fine, (N_wires_fine-1.0)/2.0, sigmaW*(N_wires_fine/N_wires))
+    gauss = stats.norm.pdf(X_fine, (N_ticks_fine-1.0)/2.0, (sigmaT/timeTickSF)*(N_ticks_fine/N_ticks)) * stats.norm.pdf(Y_fine, (N_wires_fine-1.0)/2.0, sigmaW*(N_wires_fine/N_wires))
     gauss = gauss/gauss.sum()
     result = convolve(input, gauss)
     return result
@@ -99,8 +99,8 @@ def normalize_signal_wires(input, input_uncert):
     result_uncert = np.zeros((N_ticks, N_wires))
     for i in range(0, N_wires):
         this_wire_sum = input.sum(axis=0)[i]
-        result[:,i] = input[:,i]/this_wire_sum
-        result_uncert[:,i] = input_uncert[:,i]/this_wire_sum
+        result[:, i] = input[:, i] / this_wire_sum
+        result_uncert[:, i] = input_uncert[:, i] / this_wire_sum
     return result, result_uncert
 
 # Fix baseline of individual wires in input 2D distribution to match that of reference 2D distribution
@@ -112,13 +112,43 @@ def fix_baseline(input, ref):
         num = 0.0
         for row in range(0, N_ticks):
             if (col < (N_wires-1)//2 and row > 3*(N_ticks-1)//4) or (col > (N_wires-1)//2 and row < (N_ticks-1)//4) or (col == (N_wires-1)//2 and (row > 3*(N_ticks-1)//4 or row < (N_ticks-1)//4)):
-                sum_input += input[row,col]
-                sum_ref += ref[row,col]
+                sum_input += input[row, col]
+                sum_ref += ref[row, col]
                 num += 1.0
-        avg = (sum_ref-sum_input)/num
+        avg = (sum_ref - sum_input) / num
         for row in range(0, N_ticks):
-            result[row,col] = input[row,col] + avg
+            result[row, col] = input[row, col] + avg
     return result
+
+# For each angle bin, construct the cathode prediction from the input diffusion parameters
+def get_cathode_prediction(input_sig, anode_hist, anode_uncert_hist, DL_hyp, DT_hyp):
+    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
+    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
+    sig_A_coarse = coarsen_signal(sig_A)
+    sig_C_coarse = coarsen_signal(sig_C)
+
+    pred_hist = np.zeros((N_ticks, N_wires))
+    pred_uncert_hist = np.zeros((N_ticks, N_wires))
+    for col in range(N_wires):
+        sig_A_slice = sig_A_coarse[:, col]
+        sig_A_slice = sig_A_slice / sig_A_slice.sum()
+        sig_C_slice = sig_C_coarse[:, col]
+        sig_C_slice = sig_C_slice / np.real(sig_C_slice).sum()
+        diffusion_kernel = deconvolve(sig_C_slice, sig_A_slice)
+
+        anode_slice = anode_hist[:, col]
+        anode_uncert_slice = anode_uncert_hist[:, col]
+
+        pred_slice = convolve(anode_slice, diffusion_kernel)
+        pred_uncert_slice = convolve(anode_uncert_slice, diffusion_kernel)
+
+        pred_hist[:, col] = np.real(pred_slice)
+        pred_uncert_hist[:, col] = np.real(pred_uncert_slice)
+
+    pred_hist = fix_baseline(pred_hist, anode_hist)
+    pred_uncert_hist = fix_baseline(pred_uncert_hist, anode_uncert_hist)
+
+    return pred_hist, pred_uncert_hist
 
 
 

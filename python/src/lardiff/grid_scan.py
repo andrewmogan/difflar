@@ -1,4 +1,5 @@
 import numpy as np
+from .waveform_functions import get_cathode_prediction
 from .test_statistics import calc_chisq, calc_test_statistic
 from .consts import *
 
@@ -16,8 +17,13 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
     all_shifts_actual = np.zeros((num_angle_bins, N_wires))
     all_shifts_test   = np.zeros((num_angle_bins, N_wires))
 
-    test_stat_values = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
-    num_values   = np.zeros((int((DL_max-DL_min)/DL_step+1), int((DT_max-DT_min)/DT_step+1)))
+    test_stat_values = np.zeros((int((DL_max - DL_min) / DL_step + 1), 
+                                 int((DT_max - DT_min) / DT_step + 1)))
+    num_values       = np.zeros((int((DL_max - DL_min) / DL_step + 1), 
+                                 int((DT_max - DT_min) / DT_step + 1)))
+
+    print('test_stat_values shape:', test_stat_values.shape)
+    print('num_values shape:', num_values.shape)
     row = 0
 
     if verbose:
@@ -30,11 +36,15 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             numvals = 0.0
             all_shifts = np.zeros((num_angle_bins, N_wires))
             for k in range(0, num_angle_bins):
+                pred_hist, pred_uncert_hist = get_cathode_prediction(input_signal[k], 
+                                                                     anode_hist[k], anode_uncert_hist[k], 
+                                                                     DL, DT)
                 temp_test_stat, temp_numvals, shift_vec = calc_test_statistic(
-                    input_signal[k], 
+                    #input_signal[k], 
                     anode_hist[k], anode_uncert_hist[k], 
                     cathode_hist[k], cathode_uncert_hist[k], 
-                    DL, DT,
+                    pred_hist, pred_uncert_hist,
+                    #DL, DT,
                     test_statistic,
                     interpolation=interpolation
                 )
@@ -60,4 +70,5 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             col += 1
         row += 1
 
-    return test_stat_values, min_test_stat, min_numvals, all_shifts_result, all_shifts_actual
+    return test_stat_values, min_numvals, all_shifts_result, all_shifts_actual
+    #return test_stat_values, min_test_stat, min_numvals, all_shifts_result, all_shifts_actual
