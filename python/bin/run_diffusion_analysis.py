@@ -22,6 +22,7 @@ from lardiff.plotting_functions import make_test_statistic_plot
 # Set project root directory two directories up
 LARDIFF_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_CONFIG_PATH = "{:s}/config/default.yaml".format(LARDIFF_DIR)
+driftVel = None
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -58,6 +59,11 @@ def validate_config(config):
         raise ValueError('angle_min must be less than angle_max')
     if not isinstance(config['angle_step'], int):
         raise ValueError('angle_step must be an integer')
+
+def set_drift_velocity(isdata):
+    global driftVel
+    driftVel = 0.1571 if isdata else 0.157565
+    print('driftVel IN FUNC', driftVel)
 
 def save_outputs(delta_test_statistic_values, config):
 
@@ -123,6 +129,8 @@ def measure_diffusion(input_filename, config):
     interpolation = config['interpolation']
     isdata = config['isdata']
 
+    set_drift_velocity(isdata)
+
     #test_statistic_values, min_test_statistic, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
     test_statistic_values, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
         DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, num_angle_bins,
@@ -152,6 +160,8 @@ def measure_diffusion(input_filename, config):
     #print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
     ndof = 2 # Two parameter measurement
     print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
+
+    print('driftVel:', driftVel)
 
     save_outputs(test_statistic_values, config)
 

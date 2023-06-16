@@ -40,11 +40,9 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                                                                      anode_hist[k], anode_uncert_hist[k], 
                                                                      DL, DT)
                 temp_test_stat, temp_numvals, shift_vec = calc_test_statistic(
-                    #input_signal[k], 
                     anode_hist[k], anode_uncert_hist[k], 
                     cathode_hist[k], cathode_uncert_hist[k], 
                     pred_hist, pred_uncert_hist,
-                    #DL, DT,
                     test_statistic,
                     interpolation=interpolation
                 )
