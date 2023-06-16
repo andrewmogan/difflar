@@ -12,10 +12,10 @@ from .consts import *
 from .waveform_functions import smear_signal, convolve, \
      deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
 
-def calc_test_statistic(input_sig, 
-                        anode_hist, anode_uncert_hist, 
+#def calc_test_statistic(input_sig, 
+def calc_test_statistic(anode_hist, anode_uncert_hist, 
                         cathode_hist, cathode_uncert_hist, 
-                        DL_hyp, DT_hyp, 
+                        pred_hist, pred_uncert_hist,
                         test_statistic='chi2',
                         interpolation='scipy'):
 
@@ -23,31 +23,31 @@ def calc_test_statistic(input_sig,
     temp_num_values = None 
     shift_vector    = None
 
-    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
-    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
-    sig_A_coarse = coarsen_signal(sig_A)
-    sig_C_coarse = coarsen_signal(sig_C)
+    #sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
+    #sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
+    #sig_A_coarse = coarsen_signal(sig_A)
+    #sig_C_coarse = coarsen_signal(sig_C)
 
-    pred_hist = np.zeros((N_ticks, N_wires))
-    pred_uncert_hist = np.zeros((N_ticks, N_wires))
-    for col in range(N_wires):
-        sig_A_slice = sig_A_coarse[:, col]
-        sig_A_slice = sig_A_slice / sig_A_slice.sum()
-        sig_C_slice = sig_C_coarse[:, col]
-        sig_C_slice = sig_C_slice / np.real(sig_C_slice).sum()
-        diffusion_kernel = deconvolve(sig_C_slice, sig_A_slice)
+    #pred_hist = np.zeros((N_ticks, N_wires))
+    #pred_uncert_hist = np.zeros((N_ticks, N_wires))
+    #for col in range(N_wires):
+    #    sig_A_slice = sig_A_coarse[:, col]
+    #    sig_A_slice = sig_A_slice / sig_A_slice.sum()
+    #    sig_C_slice = sig_C_coarse[:, col]
+    #    sig_C_slice = sig_C_slice / np.real(sig_C_slice).sum()
+    #    diffusion_kernel = deconvolve(sig_C_slice, sig_A_slice)
 
-        anode_slice = anode_hist[:, col]
-        anode_uncert_slice = anode_uncert_hist[:, col]
+    #    anode_slice = anode_hist[:, col]
+    #    anode_uncert_slice = anode_uncert_hist[:, col]
 
-        pred_slice = convolve(anode_slice, diffusion_kernel)
-        pred_uncert_slice = convolve(anode_uncert_slice, diffusion_kernel)
+    #    pred_slice = convolve(anode_slice, diffusion_kernel)
+    #    pred_uncert_slice = convolve(anode_uncert_slice, diffusion_kernel)
 
-        pred_hist[:, col] = np.real(pred_slice)
-        pred_uncert_hist[:, col] = np.real(pred_uncert_slice)
+    #    pred_hist[:, col] = np.real(pred_slice)
+    #    pred_uncert_hist[:, col] = np.real(pred_uncert_slice)
 
-    pred_hist = fix_baseline(pred_hist, anode_hist)
-    pred_uncert_hist = fix_baseline(pred_uncert_hist, anode_uncert_hist)
+    #pred_hist = fix_baseline(pred_hist, anode_hist)
+    #pred_uncert_hist = fix_baseline(pred_uncert_hist, anode_uncert_hist)
 
     cathode_max = 0.0
     for col in range(N_wires_start, N_wires_end):
@@ -61,24 +61,23 @@ def calc_test_statistic(input_sig,
     #cathode_max = np.amax(cathode_hist[N_ticks_start:N_ticks_end, N_wires_start:N_wires_end])
 
     if test_statistic == "chi2":
-        print('Calc chi2')
+        #print('Calc chi2')
         temp_test_stat, temp_num_values, shift_vector = calc_chisq(
             pred_hist, pred_uncert_hist,
             cathode_hist, cathode_uncert_hist, cathode_max,
             interpolation
         )
     elif test_statistic == "invariant3":
-        print('Calc invar3')
+        #print('Calc invar3')
         temp_test_stat, temp_num_values, shift_vector = calc_invariant3(
             pred_hist, pred_uncert_hist,
             cathode_hist, cathode_uncert_hist, cathode_max,
             interpolation
         )
     elif test_statistic == "invariant3_alt":
-        print('Calc invar3 alt')
+        #print('Calc invar3 alt')
         temp_test_stat, temp_num_values, shift_vector = calc_invariant3_alt(
-            pred_hist, pred_uncert_hist,
-            cathode_hist, cathode_uncert_hist, cathode_max,
+            pred_hist, cathode_hist, cathode_max,
             interpolation
         )
     else:
@@ -174,14 +173,18 @@ def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hi
             for row in range(N_ticks_start, N_ticks_end):
                 if cathode_hist[row, col] < threshold_rel * cathode_max: continue
 
-                #sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
-                #sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
-                sigma_1 = np.std(pred_uncert_hist_1D_shifted)
-                sigma_2 = np.std(cathode_uncert_hist[:, col])
+                sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
+                sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
+                #sigma_1 = np.std(pred_uncert_hist_1D_shifted)
+                #sigma_2 = np.std(cathode_uncert_hist[:, col])
+                #sigma_1 = pred_uncert_hist_1D_shifted[row]
+                #sigma_2 = cathode_uncert_hist[row, col]
                 sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
+                print('sigma', sigma)
 
-                #z_score = (pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row, col]/cathode_norm) / sigma
-                z_score = (pred_hist_1D_shifted[row] - cathode_hist[row, col]) / sigma
+                z_score = (pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row, col]/cathode_norm) / sigma
+                #z_score = (pred_hist_1D_shifted[row] - cathode_hist[row, col]) / sigma
+                print('z_score', z_score)
                 z_scores[above_threshold_count] = z_score
                 above_threshold_count += 1
 
@@ -192,58 +195,43 @@ def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hi
     print('invar3:', invar3)
     return invar3, numvals, shift_vec
 
-def calc_invariant3_alt(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max, interpolation='scipy'):
+def calc_invariant3_alt(pred_hist, cathode_hist, cathode_max, interpolation='scipy'):
     invar3 = 0.0
     numvals = 0.0
     # TODO Should shift_vec be of length N_wires or range(N_wires_start, N_wires_end)?
     shift_vec = np.zeros((N_wires))
     z_scores = np.array([])
-    for col in range(N_wires_start, N_wires_end):
 
-        # Skip central wire to avoid bias (I think?)
-        if col == (N_wires-1)//2: continue
+    # Relative wire indices, where 5 is the central wire
+    # Exclude outer wires due to FFT artifacts 
+    wire_indices = [2, 3, 4, 6, 7, 8]
+    num_wires = len(wire_indices)
+    num_ticks = len(pred_hist)
+    percent_of_max = 0.2
+    for iw, wire in enumerate(wire_indices):
+        pred = pred_hist[:, wire]
+        meas = cathode_hist[:, wire]
 
-        min_invar3 = np.inf
-        min_numvals = 0.0
-        invar3_count = 0
-        #for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
-        for shift_val in np.arange(0, 1):
-            pred_norm = 0
-            cathode_norm = 0
-            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
-            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
-            above_threshold_count = 0
-            for row in range(N_ticks_start, N_ticks_end):
-                # Exclude values below threshold
-                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+        wire_max = np.max(meas)
+        threshold = percent_of_max * np.max(meas)
 
-                pred_norm += pred_hist_1D_shifted[row]
-                cathode_norm += cathode_hist[row, col]
+        meas_roi = meas[meas > threshold]
+        meas_roi_indices = np.where(meas > threshold)
+        pred_roi = pred[meas_roi_indices]
 
-                above_threshold_count += 1
+        sigma_1 = np.std(pred_roi)
+        sigma_2 = np.std(meas_roi)
+        sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
 
-            invar3_temp = 0.0
-            numvals_temp = 0.0
-            z_scores = np.zeros(above_threshold_count)
-            above_threshold_count = 0
-            for row in range(N_ticks_start, N_ticks_end):
-                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
-
-                #sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
-                #sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
-                sigma_1 = np.std(pred_uncert_hist_1D_shifted)
-                sigma_2 = np.std(cathode_uncert_hist[:, col])
-                sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
-
-                #z_score = (pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row, col]/cathode_norm) / sigma
-                z_score = (pred_hist_1D_shifted[row] - cathode_hist[row, col]) / sigma
-                z_scores[above_threshold_count] = z_score
-                above_threshold_count += 1
-
-    print('z_scores shape:', z_scores.shape)
+        wire_z_scores = (pred_roi - meas_roi) / sigma
+        z_scores = np.concatenate((z_scores, wire_z_scores))
+        
+    print('z_scores:', z_scores)
+    print('z scores shape:', z_scores.shape)
     dist = lambda x: invariant3(x, alpha=2/3, fast=False)
-    invar3 = dist(z_scores)
-    print('invar3:', invar3)
+    distances = dist(z_scores)
+    print('invariant3 shape', distances.shape)
+    print('invariant3', distances)
     return invar3, numvals, shift_vec
 
 ############### Invariant3 Functions from the paper #################
