@@ -1,0 +1,15 @@
+DL_min: 3.5
+DL_max: 4.5
+DL_step: 0.5
+
+DT_min: 7.0
+DT_max: 9.0
+DT_step: 0.5
+
+angle_min: 44
+angle_max: 46
+angle_step: 2
+
+test_statistic: 'chi2'
+interpolation: 'scipy'
+isdata: True
