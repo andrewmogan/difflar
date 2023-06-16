@@ -198,24 +198,34 @@ def make_test_statistic_plot(delta_test_statistic_values, config,
     DT_max  = config['DT_max']
     DT_step = config['DT_step']
     test_statistic = config['test_statistic']
+    isdata = config['isdata']
 
     if test_statistic == "chi2":
         make_chisq_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
                         DT_min, DT_max, DT_step, 
-                        filename)
+                        filename, isdata)
     elif test_statistic == "invariant3":
-        #print('Oops not implemented')
+        make_invariant3_plot(delta_test_statistic_values, 
+                        DL_min, DL_max, DL_step, 
+                        DT_min, DT_max, DT_step, 
+                        filename, isdata)
+    elif test_statistic == "invariant3_alt":
         make_chisq_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
                         DT_min, DT_max, DT_step, 
-                        filename)
+                        filename, isdata)
     else:
         raise ValueError('Invalid test_statistic argument provided')
 
 # Make final chi-squared scan plot
-def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, filename):
+def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, filename, isdata):
     point_y, point_x = np.unravel_index(np.argmin(delta_chisq_values), delta_chisq_values.shape)
+
+    # Delta chi^2 levels corresponding to 1 and 2 sigma when measuring two parameters
+    # See the table toward to bottom of https://homepage.physics.uiowa.edu/~pkaaret/2019f_p4905/L17.html
+    level_1sigma = 2.30
+    level_2sigma = 6.17
     
     tickformat_DT = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format((DT_step*x/100.0)+DT_min-DT_step/2.0))
     tickformat_DL = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format((DL_step*x/100.0)+DL_min-DL_step/2.0))
@@ -229,8 +239,12 @@ def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max,
     f, axes = plt.subplots(1, 1, gridspec_kw={'width_ratios': [1]})
     shw = axes.contourf(delta_chisq_values - np.amin(delta_chisq_values))
     shw2 = axes.contour(delta_chisq_values - np.amin(delta_chisq_values), 
+    #shw = axes.contourf(delta_chisq_values)
+    #shw2 = axes.contour(delta_chisq_values, 
                         levels = [2.30, 6.17], 
                         colors=('red',), linestyles=('dashed', 'solid'), linewidths=(3,))
+    print('PLOTTING delta_chisq_values', delta_chisq_values)
+    print('PLOTTING np.min', np.amin(delta_chisq_values))
     shw3 = axes.plot(point_x, point_y, marker='o', markersize=15, color='red')
     shw4 = axes.plot((100.0 / DT_step) * (DT_actual - DT_min + DT_step / 2.0), 
                      (100.0 / DL_step) * (DL_actual - DL_min + DL_step / 2.0), 
@@ -259,6 +273,61 @@ def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max,
           (DL_step * max(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0))
 
     plt.savefig(filename)
+
+# Make final invariant3 plot
+def make_invariant3_plot(invariant3_values, DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, filename, isdata):
+    point_y, point_x = np.unravel_index(np.argmin(invariant3_values), invariant3_values.shape)
+
+    # Delta chi^2 levels corresponding to 1 and 2 sigma when measuring two parameters
+    # See the table toward to bottom of https://homepage.physics.uiowa.edu/~pkaaret/2019f_p4905/L17.html
+    level_1sigma = 2.30
+    level_2sigma = 6.17
+    
+    tickformat_DT = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format((DT_step*x/100.0)+DT_min-DT_step/2.0))
+    tickformat_DL = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format((DL_step*x/100.0)+DL_min-DL_step/2.0))
+    labels_DT = []
+    for i in np.arange(DT_min, DT_max + 0.25, 0.25):
+        labels_DT.append((100.0 / DT_step) * (i - DT_min + DT_step / 2.0))
+    labels_DL = []
+    for i in np.arange(DL_min, DL_max + 0.25, 0.25):
+        labels_DL.append((100.0 / DL_step) * (i - DL_min + DL_step / 2.0))
+        
+    f, axes = plt.subplots(1, 1, gridspec_kw={'width_ratios': [1]})
+    shw = axes.contourf(invariant3_values)
+    shw2 = axes.contour(invariant3_values, 
+                        levels = [2.30, 6.17], 
+                        colors=('red',), linestyles=('dashed', 'solid'), linewidths=(3,))
+    shw3 = axes.plot(point_x, point_y, marker='o', markersize=15, color='red')
+    shw4 = axes.plot((100.0 / DT_step) * (DT_actual - DT_min + DT_step / 2.0), 
+                     (100.0 / DL_step) * (DL_actual - DL_min + DL_step / 2.0), 
+                     marker='*', markersize=20, color='fuchsia')
+    axes.set_xlabel('$D_{T}$ [cm$^{2}$/s]', fontsize=36, labelpad=15)
+    axes.set_ylabel('$D_{L}$ [cm$^{2}$/s]', fontsize=36, labelpad=15)
+    axes.tick_params(axis='x', labelsize=28)
+    axes.tick_params(axis='y', labelsize=28)
+    axes.xaxis.set_major_formatter(tickformat_DT)
+    axes.yaxis.set_major_formatter(tickformat_DL)
+    axes.set_xticks(labels_DT)
+    axes.set_yticks(labels_DL)
+    axes.set_title('invariant3 Scan Results', fontsize=48, pad=30)
+    cbar = plt.colorbar(shw)
+    cbar.set_label('invariant3', fontsize=36, labelpad=15)
+    cbar.ax.tick_params(labelsize=28)
+    f.set_size_inches(14,10)
+    f.tight_layout()
+    print('DT Result:  %.2f (%.2f, %.2f)' % 
+         ((DT_step * point_x / 100.0) + DT_min - DT_step / 2.0, 
+          (DT_step * min(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0, 
+          (DT_step * max(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0))
+    print('DL Result:  %.2f (%.2f, %.2f)' % 
+         ((DL_step * point_y / 100.0) + DL_min - DL_step / 2.0, 
+          (DL_step * min(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0, 
+          (DL_step * max(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0))
+
+    plt.savefig(filename)
+
+
+
 
 
 
