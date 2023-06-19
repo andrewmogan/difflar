@@ -4,7 +4,10 @@ from scipy import fftpack
 from scipy import stats
 from numba import jit
 from numba import float64
-from .consts import *
+#from lardiff.consts import driftVel, N_ticks, N_ticks_fine, N_wires, N_wires_fine, \
+#                           wirePitch, timeTickSF, set_drift_velocity, ticks_drift_A, \
+#                           ticks_drift_C
+from lardiff.consts import *
 
 # Convolve two 1D or 2D distributions (order does not matter)
 def convolve(input1, input2):
@@ -24,7 +27,7 @@ def deconvolve(input1, input2):
 
 # Create hypothesis track-like signal distribution used to calculate diffusion kernel
 @jit(nopython=True)
-def create_signal(angles):
+def create_signal(angles, isdata):
     """
     Computes the track-like signal distribution for a given set of incident angles.
 
@@ -38,6 +41,12 @@ def create_signal(angles):
     result : numpy.ndarray
         Array of shape (N_ticks_fine, N_wires_fine) containing the track-like signal distribution.
     """
+
+    # These can't be set using consts.set_drift_params while using numba, so
+    # just set them here
+    driftVel = driftVel_data if isdata else driftVel_MC
+    ticks_drift_A = offset_distance / driftVel / timeTickSF
+    ticks_drift_C = (AC_distance - offset_distance) / driftVel / timeTickSF
 
     result = np.zeros((N_ticks_fine, N_wires_fine))
     for angle in angles:
@@ -59,7 +68,8 @@ def create_signal(angles):
     return result
 
 # Smear input 2D distribution to simulate action of diffusion (both longitudinal and transverse)
-def smear_signal(input, ticks_drift, DL_hyp, DT_hyp):
+def smear_signal(input, ticks_drift, DL_hyp, DT_hyp, isdata):
+    driftVel, ticks_drift_A, ticks_drift_C = set_drift_params(isdata)
     sigmaT = np.sqrt(2.0 * DL_hyp * timeTickSF * ticks_drift) / 1000.0 / driftVel;
     sigmaW = np.sqrt(2.0 * DT_hyp * timeTickSF * ticks_drift) / 1000.0 / wirePitch;
     X_fine, Y_fine = np.ogrid[0:N_ticks_fine, 0:N_wires_fine]
@@ -121,9 +131,10 @@ def fix_baseline(input, ref):
     return result
 
 # For each angle bin, construct the cathode prediction from the input diffusion parameters
-def get_cathode_prediction(input_sig, anode_hist, anode_uncert_hist, DL_hyp, DT_hyp):
-    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
-    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
+def get_cathode_prediction(input_sig, anode_hist, anode_uncert_hist, DL_hyp, DT_hyp, isdata):
+    driftVel, ticks_drift_A, ticks_drift_C = set_drift_params(isdata)
+    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp, isdata)
+    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp, isdata)
     sig_A_coarse = coarsen_signal(sig_A)
     sig_C_coarse = coarsen_signal(sig_C)
 

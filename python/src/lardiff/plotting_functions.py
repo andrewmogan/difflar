@@ -12,12 +12,13 @@ def make_signal_plots(input_sig,
                       cathode_hist, cathode_uncert_hist, 
                       DL_hyp, DT_hyp, 
                       shift_vec, 
+                      isdata,
                       filename2D, filename1D):
 
     hist_file_name = 'diffusion_hist_data.npz'
 
-    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
-    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
+    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp, isdata)
+    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp, isdata)
     sig_A_coarse = coarsen_signal(sig_A)
     sig_C_coarse = coarsen_signal(sig_C)
 
@@ -243,8 +244,6 @@ def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max,
     #shw2 = axes.contour(delta_chisq_values, 
                         levels = [2.30, 6.17], 
                         colors=('red',), linestyles=('dashed', 'solid'), linewidths=(3,))
-    print('PLOTTING delta_chisq_values', delta_chisq_values)
-    print('PLOTTING np.min', np.amin(delta_chisq_values))
     shw3 = axes.plot(point_x, point_y, marker='o', markersize=15, color='red')
     shw4 = axes.plot((100.0 / DT_step) * (DT_actual - DT_min + DT_step / 2.0), 
                      (100.0 / DL_step) * (DL_actual - DL_min + DL_step / 2.0), 

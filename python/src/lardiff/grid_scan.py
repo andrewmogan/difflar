@@ -9,6 +9,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                         anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
                         test_statistic='chi2',
                         interpolation='scipy',
+                        isdata=False,
                         verbose=False):
 
     min_test_stat = np.inf
@@ -38,7 +39,8 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             for k in range(0, num_angle_bins):
                 pred_hist, pred_uncert_hist = get_cathode_prediction(input_signal[k], 
                                                                      anode_hist[k], anode_uncert_hist[k], 
-                                                                     DL, DT)
+                                                                     DL, DT, 
+                                                                     isdata)
                 temp_test_stat, temp_numvals, shift_vec = calc_test_statistic(
                     anode_hist[k], anode_uncert_hist[k], 
                     cathode_hist[k], cathode_uncert_hist[k], 
