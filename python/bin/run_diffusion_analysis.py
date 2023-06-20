@@ -58,7 +58,7 @@ def validate_config(config):
     if not isinstance(config['angle_step'], int):
         raise ValueError('angle_step must be an integer')
 
-def save_outputs(delta_test_statistic_values, config):
+def save_outputs(delta_test_statistic_values, all_shifts_actual, all_shifts_result, config):
 
     current_time = datetime.datetime.now().strftime('%m%d%Y%H%M%S')
     #test_statistic_file_name = '{}/plots/diffusion_{}_{}.png'.format(LARDIFF_DIR, config['test_statistic'], current_time)
@@ -66,14 +66,19 @@ def save_outputs(delta_test_statistic_values, config):
     isdata = config['isdata']
     data_or_mc = 'data' if isdata==True else 'mc'
 
+    results_dict = {}
     test_statistic_file_name = '{}/plots/diffusion_{}_{}_{}.png'.format(LARDIFF_DIR, test_statistic, data_or_mc, current_time)
-    make_test_statistic_plot(delta_test_statistic_values, config,
-                             filename=test_statistic_file_name)
+    make_test_statistic_plot(
+        delta_test_statistic_values, config,
+        filename=test_statistic_file_name,
+        results_dict=results_dict
+    )
+    print('RUN results_dict', results_dict)
     print('Test statistic grid scan plot saved to', test_statistic_file_name)
 
-    output_data_filename = '{}/output_data/diffusion_results_{}.pkl'.format(LARDIFF_DIR, current_time)
+    output_data_filename = '{}/output_data/diffusion_results_{}_{}.pkl'.format(LARDIFF_DIR, data_or_mc, current_time)
     with open(output_data_filename, 'wb') as fout:
-        pickle.dump((delta_test_statistic_values, config), fout)
+        pickle.dump((results_dict, all_shifts_actual, all_shifts_result, delta_test_statistic_values, config), fout)
 
     print('Output data and config saved to', output_data_filename)
 
@@ -137,7 +142,6 @@ def measure_diffusion(input_filename, config):
         pickle.dump((test_statistic_values), fout)
 
     zoom_factor = 100
-
     if test_statistic == "chi2":
         test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
         # If chi^2, get delta chi^2 values
@@ -153,7 +157,7 @@ def measure_diffusion(input_filename, config):
     ndof = 2 # Two parameter measurement
     print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
 
-    save_outputs(test_statistic_values, config)
+    save_outputs(test_statistic_values, all_shifts_actual, all_shifts_result, config)
 
 def main():
 
