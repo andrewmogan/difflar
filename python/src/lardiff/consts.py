@@ -5,7 +5,8 @@ DT_actual = 8.8
 
 threshold_rel = 0.1
 
-shift_max = 2.0
+#shift_max = 2.0
+shift_max = 1.5
 #shift_max = 1.0
 #shift_max = 0.5
 shift_step = 0.1
