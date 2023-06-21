@@ -153,8 +153,8 @@ def measure_diffusion(input_filename, config):
     DL_result = (DL_step * point_y / zoom_factor) + DL_min - DL_step / 2.0
     DT_result = (DT_step * point_x / zoom_factor) + DT_min - DT_step / 2.0
 
-    #print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
     ndof = 2 # Two parameter measurement
+    print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
     print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
 
     save_outputs(test_statistic_values, all_shifts_actual, all_shifts_result, config)

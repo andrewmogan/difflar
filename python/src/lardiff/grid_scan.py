@@ -27,9 +27,6 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
     print('num_values shape:', num_values.shape)
     row = 0
 
-    if verbose:
-        print('[GRID_SCAN] Calculating test statistic', test_statistic)
-
     for DL in np.arange(DL_min, DL_max+DL_step, DL_step):
         col = 0
         for DT in np.arange(DT_min, DT_max+DT_step, DT_step):
@@ -37,10 +34,14 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             numvals = 0.0
             all_shifts = np.zeros((num_angle_bins, N_wires))
             for k in range(0, num_angle_bins):
-                pred_hist, pred_uncert_hist = get_cathode_prediction(input_signal[k], 
-                                                                     anode_hist[k], anode_uncert_hist[k], 
-                                                                     DL, DT, 
-                                                                     isdata)
+                # Generate prediction histograms
+                pred_hist, pred_uncert_hist = get_cathode_prediction(
+                    input_signal[k], 
+                    anode_hist[k], anode_uncert_hist[k], 
+                    DL, DT, 
+                    isdata
+                )
+                # Calculate test statistic for this angle bin
                 temp_test_stat, temp_numvals, shift_vec = calc_test_statistic(
                     anode_hist[k], anode_uncert_hist[k], 
                     cathode_hist[k], cathode_uncert_hist[k], 
@@ -48,6 +49,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                     test_statistic,
                     interpolation=interpolation
                 )
+                # Running sum of test statistic values 
                 test_stat += temp_test_stat
                 numvals += temp_numvals
                 all_shifts[k, :] = shift_vec
@@ -56,15 +58,20 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                     print('    %d %.2f' % (k, temp_test_stat))
                     with np.printoptions(precision=1, sign=' ', floatmode='fixed', suppress=True):
                         print('   ', k, shift_vec)
+
+            # Each point  in the DL/DT grid contains the sum of test_stat values across all angles
             test_stat_values[row, col] = test_stat
             num_values[row, col] = numvals
+            # Get the DL/DT values which minimize the test_stat
             if test_stat < min_test_stat:
                 min_test_stat = test_stat
                 min_numvals = numvals
                 all_shifts_result = all_shifts
-            if abs(DL-DL_actual) < DL_step and abs(DT-DT_actual) < DT_step:
+            # If hypothesis values are less than step size away from true values...save
+            # shifts? I don't really understand this.
+            if abs(DL - DL_actual) < DL_step and abs(DT - DT_actual) < DT_step:
                 all_shifts_actual = all_shifts
-            if abs(DL-DL_test) < DL_step and abs(DT-DT_test) < DT_step:
+            if abs(DL - DL_test) < DL_step and abs(DT - DT_test) < DT_step:
                 all_shifts_test = all_shifts
             print('%.2f %.2f %.2f' % (DL, DT, test_stat))
             col += 1
