@@ -7,12 +7,12 @@ from functools import lru_cache
 from scipy.stats import rv_continuous, chi2, ttest_ind, chisquare
 from scipy.special import erf, erfinv
 from scipy.optimize import root_scalar
+from scipy.interpolate import interp1d
 
 from .consts import *
 from .waveform_functions import smear_signal, convolve, \
      deconvolve, coarsen_signal, fix_baseline, shift_signal_1D
 
-#def calc_test_statistic(input_sig, 
 def calc_test_statistic(anode_hist, anode_uncert_hist, 
                         cathode_hist, cathode_uncert_hist, 
                         pred_hist, pred_uncert_hist,
@@ -22,32 +22,6 @@ def calc_test_statistic(anode_hist, anode_uncert_hist,
     temp_test_stat  = None 
     temp_num_values = None 
     shift_vector    = None
-
-    #sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
-    #sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
-    #sig_A_coarse = coarsen_signal(sig_A)
-    #sig_C_coarse = coarsen_signal(sig_C)
-
-    #pred_hist = np.zeros((N_ticks, N_wires))
-    #pred_uncert_hist = np.zeros((N_ticks, N_wires))
-    #for col in range(N_wires):
-    #    sig_A_slice = sig_A_coarse[:, col]
-    #    sig_A_slice = sig_A_slice / sig_A_slice.sum()
-    #    sig_C_slice = sig_C_coarse[:, col]
-    #    sig_C_slice = sig_C_slice / np.real(sig_C_slice).sum()
-    #    diffusion_kernel = deconvolve(sig_C_slice, sig_A_slice)
-
-    #    anode_slice = anode_hist[:, col]
-    #    anode_uncert_slice = anode_uncert_hist[:, col]
-
-    #    pred_slice = convolve(anode_slice, diffusion_kernel)
-    #    pred_uncert_slice = convolve(anode_uncert_slice, diffusion_kernel)
-
-    #    pred_hist[:, col] = np.real(pred_slice)
-    #    pred_uncert_hist[:, col] = np.real(pred_uncert_slice)
-
-    #pred_hist = fix_baseline(pred_hist, anode_hist)
-    #pred_uncert_hist = fix_baseline(pred_uncert_hist, anode_uncert_hist)
 
     cathode_max = 0.0
     for col in range(N_wires_start, N_wires_end):
@@ -60,22 +34,20 @@ def calc_test_statistic(anode_hist, anode_uncert_hist,
     ### Implement a range of indices instead of N_wires_start etc.?
     #cathode_max = np.amax(cathode_hist[N_ticks_start:N_ticks_end, N_wires_start:N_wires_end])
 
+    # Calculate test statistic of choice
     if test_statistic == "chi2":
-        #print('Calc chi2')
         temp_test_stat, temp_num_values, shift_vector = calc_chisq(
             pred_hist, pred_uncert_hist,
             cathode_hist, cathode_uncert_hist, cathode_max,
             interpolation
         )
     elif test_statistic == "invariant3":
-        #print('Calc invar3')
         temp_test_stat, temp_num_values, shift_vector = calc_invariant3(
             pred_hist, pred_uncert_hist,
             cathode_hist, cathode_uncert_hist, cathode_max,
             interpolation
         )
     elif test_statistic == "invariant3_alt":
-        #print('Calc invar3 alt')
         temp_test_stat, temp_num_values, shift_vector = calc_invariant3_alt(
             pred_hist, cathode_hist, cathode_max,
             interpolation
@@ -90,41 +62,47 @@ def calc_test_statistic(anode_hist, anode_uncert_hist,
 #@profile
 #@jit(nopython=True)
 def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max, interpolation='scipy'):
-    chisq = 0.0
-    numvals = 0.0
-    # TODO Should shift_vec be of length N_wires or range(N_wires_start, N_wires_end)?
+    chisq = 0
+    numvals = 0
     shift_vec = np.zeros((N_wires))
     for col in range(N_wires_start, N_wires_end):
 
-        # Skip central wire to avoid bias (I think?)
+        # Skip central wire to avoid bias 
         if col == (N_wires-1)//2: continue
 
         min_chisq = np.inf
-        min_numvals = 0.0
-        chisq_count = 0
-        for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
-            #anode_norm = 0
-            pred_norm = 0
-            cathode_norm = 0
-            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
-            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
-            for row in range(N_ticks_start, N_ticks_end):
-                # Exclude values below threshold
-                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+        min_numvals = 0
 
-                #anode_norm += anode_hist[row,col]
-                pred_norm += pred_hist_1D_shifted[row]
-                cathode_norm += cathode_hist[row, col]
+        # Iteratively shift cathode prediction relative to measurement
+        # Take configuration with minimum chi^2 to avoid mis-alignment bias
+        shift_vals = np.arange(-1 * shift_max, shift_max + shift_step, shift_step)
+        pred_hist_1D_shifted = np.empty_like(pred_hist)
+        pred_uncert_hist_1D_shifted = np.empty_like(pred_uncert_hist)
 
-            chisq_temp = 0.0
-            numvals_temp = 0.0
-            for row in range(N_ticks_start, N_ticks_end):
-                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+        for shift_val in shift_vals:
+            pred_interp = interp1d(np.arange(N_ticks), pred_hist[:, col], fill_value='extrapolate', kind='cubic')
+            pred_hist_1D_shifted[:, col] = pred_interp(np.arange(N_ticks) - shift_val)
 
-                chisq_temp += ((pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row,col]/cathode_norm)**2) / \
-                              ((pred_uncert_hist_1D_shifted[row]/pred_norm)**2 + (cathode_uncert_hist[row,col]/cathode_norm)**2)
-                chisq_count += 1
-                numvals_temp += 1.0
+            uncert_interp = interp1d(np.arange(N_ticks), pred_uncert_hist[:, col], fill_value='extrapolate', kind='cubic')
+            pred_uncert_hist_1D_shifted[:, col] = uncert_interp(np.arange(N_ticks) - shift_val)
+
+			#np.interp(np.arange(N_ticks), np.arange(N_ticks) + shift_val, pred_hist[:, col], pred_hist_1D_shifted[:, col])
+			#np.interp(np.arange(N_ticks), np.arange(N_ticks) + shift_val, pred_uncert_hist[:, col], pred_uncert_hist_1D_shifted[:, col])
+
+            #pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
+            #pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
+
+            cathode_mask = cathode_hist[N_ticks_start:N_ticks_end, col] >= threshold_rel * cathode_max
+            pred_norm = pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask].sum()
+            cathode_norm = cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask].sum()
+
+            chisq_temp = np.sum(((pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm -
+                                  cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm) ** 2) /
+								((pred_uncert_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm) ** 2 +
+								 (cathode_uncert_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm) ** 2))
+
+            numvals_temp = np.count_nonzero(cathode_mask)
+
             if chisq_temp < min_chisq:
                 min_chisq = chisq_temp
                 min_numvals = numvals_temp

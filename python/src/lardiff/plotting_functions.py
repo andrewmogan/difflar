@@ -12,12 +12,13 @@ def make_signal_plots(input_sig,
                       cathode_hist, cathode_uncert_hist, 
                       DL_hyp, DT_hyp, 
                       shift_vec, 
+                      isdata,
                       filename2D, filename1D):
 
     hist_file_name = 'diffusion_hist_data.npz'
 
-    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp)
-    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp)
+    sig_A = smear_signal(input_sig, ticks_drift_A, DL_hyp, DT_hyp, isdata)
+    sig_C = smear_signal(input_sig, ticks_drift_C, DL_hyp, DT_hyp, isdata)
     sig_A_coarse = coarsen_signal(sig_A)
     sig_C_coarse = coarsen_signal(sig_C)
 
@@ -189,7 +190,8 @@ def make_signal_plots(input_sig,
 
 ######################### Grid scan plots ###################################
 def make_test_statistic_plot(delta_test_statistic_values, config, 
-                             filename='plots/diffusion_test_statistic.png'):
+                             filename='plots/diffusion_test_statistic.png',
+                             results_dict={}):
 
     DL_min  = config['DL_min']
     DL_max  = config['DL_max']
@@ -204,22 +206,28 @@ def make_test_statistic_plot(delta_test_statistic_values, config,
         make_chisq_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
                         DT_min, DT_max, DT_step, 
-                        filename, isdata)
+                        filename, isdata,
+                        results_dict)
     elif test_statistic == "invariant3":
         make_invariant3_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
                         DT_min, DT_max, DT_step, 
-                        filename, isdata)
+                        filename, isdata,
+                        results_dict)
     elif test_statistic == "invariant3_alt":
         make_chisq_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
                         DT_min, DT_max, DT_step, 
-                        filename, isdata)
+                        filename, isdata,
+                        results_dict)
     else:
         raise ValueError('Invalid test_statistic argument provided')
 
 # Make final chi-squared scan plot
-def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, filename, isdata):
+def make_chisq_plot(delta_chisq_values, 
+                    DL_min, DL_max, DL_step, 
+                    DT_min, DT_max, DT_step, 
+                    filename, isdata, results_dict):
     point_y, point_x = np.unravel_index(np.argmin(delta_chisq_values), delta_chisq_values.shape)
 
     # Delta chi^2 levels corresponding to 1 and 2 sigma when measuring two parameters
@@ -243,8 +251,6 @@ def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max,
     #shw2 = axes.contour(delta_chisq_values, 
                         levels = [2.30, 6.17], 
                         colors=('red',), linestyles=('dashed', 'solid'), linewidths=(3,))
-    print('PLOTTING delta_chisq_values', delta_chisq_values)
-    print('PLOTTING np.min', np.amin(delta_chisq_values))
     shw3 = axes.plot(point_x, point_y, marker='o', markersize=15, color='red')
     shw4 = axes.plot((100.0 / DT_step) * (DT_actual - DT_min + DT_step / 2.0), 
                      (100.0 / DL_step) * (DL_actual - DL_min + DL_step / 2.0), 
@@ -263,19 +269,32 @@ def make_chisq_plot(delta_chisq_values, DL_min, DL_max, DL_step, DT_min, DT_max,
     cbar.ax.tick_params(labelsize=28)
     f.set_size_inches(14,10)
     f.tight_layout()
-    print('DT Result:  %.2f (%.2f, %.2f)' % 
-         ((DT_step * point_x / 100.0) + DT_min - DT_step / 2.0, 
-          (DT_step * min(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0, 
-          (DT_step * max(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0))
-    print('DL Result:  %.2f (%.2f, %.2f)' % 
-         ((DL_step * point_y / 100.0) + DL_min - DL_step / 2.0, 
-          (DL_step * min(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0, 
-          (DL_step * max(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0))
+
+    DT_result = (DT_step * point_x / 100.0) + DT_min - DT_step / 2.0
+    DT_down   = (DT_step * min(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0 
+    DT_up     = (DT_step * max(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0
+
+    DL_result = (DL_step * point_y / 100.0) + DL_min - DL_step / 2.0
+    DL_down   = (DL_step * min(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0 
+    DL_up     = (DL_step * max(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0
+
+    print('DT Result:  %.2f (%.2f, %.2f)' % (DT_result, DT_down, DT_up))
+    print('DL Result:  %.2f (%.2f, %.2f)' % (DL_result, DL_down, DL_up))
 
     plt.savefig(filename)
 
+    results_dict['DT_result'] = DT_result
+    results_dict['DT_down']   = DT_down
+    results_dict['DT_up']     = DT_up
+    results_dict['DL_result'] = DL_result
+    results_dict['DL_down']   = DL_down
+    results_dict['DL_up']     = DL_up
+
 # Make final invariant3 plot
-def make_invariant3_plot(invariant3_values, DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, filename, isdata):
+def make_invariant3_plot(invariant3_values, 
+                         DL_min, DL_max, DL_step, 
+                         DT_min, DT_max, DT_step, 
+                         filename, isdata, results_dict):
     point_y, point_x = np.unravel_index(np.argmin(invariant3_values), invariant3_values.shape)
 
     # Delta chi^2 levels corresponding to 1 and 2 sigma when measuring two parameters
@@ -315,16 +334,36 @@ def make_invariant3_plot(invariant3_values, DL_min, DL_max, DL_step, DT_min, DT_
     cbar.ax.tick_params(labelsize=28)
     f.set_size_inches(14,10)
     f.tight_layout()
-    print('DT Result:  %.2f (%.2f, %.2f)' % 
-         ((DT_step * point_x / 100.0) + DT_min - DT_step / 2.0, 
-          (DT_step * min(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0, 
-          (DT_step * max(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0))
-    print('DL Result:  %.2f (%.2f, %.2f)' % 
-         ((DL_step * point_y / 100.0) + DL_min - DL_step / 2.0, 
-          (DL_step * min(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0, 
-          (DL_step * max(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0))
+
+    DT_result = (DT_step * point_x / 100.0) + DT_min - DT_step / 2.0
+    DT_down   = (DT_step * min(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0 
+    DT_up     = (DT_step * max(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0
+
+    DL_result = (DL_step * point_y / 100.0) + DL_min - DL_step / 2.0
+    DL_down   = (DL_step * min(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0 
+    DL_up     = (DL_step * max(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0
+
+    print('DT Result:  %.2f (%.2f, %.2f)' % (DT_result, DT_down, DT_up))
+    print('DL Result:  %.2f (%.2f, %.2f)' % (DL_result, DL_down, DL_up))
+
+    #print('DT Result:  %.2f (%.2f, %.2f)' % 
+    #     ((DT_step * point_x / 100.0) + DT_min - DT_step / 2.0, 
+    #      (DT_step * min(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0, 
+    #      (DT_step * max(shw2.collections[0].get_paths()[0].vertices[:, 0]) / 100.0) + DT_min - DT_step / 2.0))
+    #print('DL Result:  %.2f (%.2f, %.2f)' % 
+    #     ((DL_step * point_y / 100.0) + DL_min - DL_step / 2.0, 
+    #      (DL_step * min(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0, 
+    #      (DL_step * max(shw2.collections[0].get_paths()[0].vertices[:, 1]) / 100.0) + DL_min - DL_step / 2.0))
 
     plt.savefig(filename)
+
+    # TODO Seems messy to get values from a plotting function
+    results_dict['DT_result'] = DT_result
+    results_dict['DT_down']   = DT_down
+    results_dict['DT_up']     = DT_up
+    results_dict['DL_result'] = DL_result
+    results_dict['DL_down']   = DL_down
+    results_dict['DL_up']     = DL_up
 
 
 

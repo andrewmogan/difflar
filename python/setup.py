@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-VER = "1.1.0"
+VER = "1.2.0"
 
 setup(
     name="lardiff",
