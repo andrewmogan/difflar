@@ -7,6 +7,7 @@ from functools import lru_cache
 from scipy.stats import rv_continuous, chi2, ttest_ind, chisquare
 from scipy.special import erf, erfinv
 from scipy.optimize import root_scalar
+from scipy.interpolate import interp1d
 
 from .consts import *
 from .waveform_functions import smear_signal, convolve, \
@@ -61,8 +62,8 @@ def calc_test_statistic(anode_hist, anode_uncert_hist,
 #@profile
 #@jit(nopython=True)
 def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max, interpolation='scipy'):
-    chisq = 0.0
-    numvals = 0.0
+    chisq = 0
+    numvals = 0
     shift_vec = np.zeros((N_wires))
     for col in range(N_wires_start, N_wires_end):
 
@@ -71,30 +72,37 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
 
         min_chisq = np.inf
         min_numvals = 0
+
         # Iteratively shift cathode prediction relative to measurement
         # Take configuration with minimum chi^2 to avoid mis-alignment bias
-        for shift_val in np.arange(-1.0*shift_max, shift_max+shift_step, shift_step):
-            #anode_norm = 0
-            pred_norm = 0
-            cathode_norm = 0
-            pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
-            pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
-            # Get normalization factor for values above threshold
-            for row in range(N_ticks_start, N_ticks_end):
-                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+        shift_vals = np.arange(-1 * shift_max, shift_max + shift_step, shift_step)
+        pred_hist_1D_shifted = np.empty_like(pred_hist)
+        pred_uncert_hist_1D_shifted = np.empty_like(pred_uncert_hist)
 
-                #anode_norm += anode_hist[row,col]
-                pred_norm += pred_hist_1D_shifted[row]
-                cathode_norm += cathode_hist[row, col]
+        for shift_val in shift_vals:
+            pred_interp = interp1d(np.arange(N_ticks), pred_hist[:, col], fill_value='extrapolate', kind='cubic')
+            pred_hist_1D_shifted[:, col] = pred_interp(np.arange(N_ticks) - shift_val)
 
-            chisq_temp = 0
-            numvals_temp = 0
-            for row in range(N_ticks_start, N_ticks_end):
-                if cathode_hist[row, col] < threshold_rel * cathode_max: continue
+            uncert_interp = interp1d(np.arange(N_ticks), pred_uncert_hist[:, col], fill_value='extrapolate', kind='cubic')
+            pred_uncert_hist_1D_shifted[:, col] = uncert_interp(np.arange(N_ticks) - shift_val)
 
-                chisq_temp += ((pred_hist_1D_shifted[row]/pred_norm - cathode_hist[row,col]/cathode_norm)**2) / \
-                              ((pred_uncert_hist_1D_shifted[row]/pred_norm)**2 + (cathode_uncert_hist[row,col]/cathode_norm)**2)
-                numvals_temp += 1
+			#np.interp(np.arange(N_ticks), np.arange(N_ticks) + shift_val, pred_hist[:, col], pred_hist_1D_shifted[:, col])
+			#np.interp(np.arange(N_ticks), np.arange(N_ticks) + shift_val, pred_uncert_hist[:, col], pred_uncert_hist_1D_shifted[:, col])
+
+            #pred_hist_1D_shifted = shift_signal_1D(pred_hist[:, col], shift_val, interpolation)
+            #pred_uncert_hist_1D_shifted = shift_signal_1D(pred_uncert_hist[:, col], shift_val, interpolation)
+
+            cathode_mask = cathode_hist[N_ticks_start:N_ticks_end, col] >= threshold_rel * cathode_max
+            pred_norm = pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask].sum()
+            cathode_norm = cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask].sum()
+
+            chisq_temp = np.sum(((pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm -
+                                  cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm) ** 2) /
+								((pred_uncert_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm) ** 2 +
+								 (cathode_uncert_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm) ** 2))
+
+            numvals_temp = np.count_nonzero(cathode_mask)
+
             if chisq_temp < min_chisq:
                 min_chisq = chisq_temp
                 min_numvals = numvals_temp
