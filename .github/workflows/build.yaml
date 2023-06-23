@@ -1,0 +1,26 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build C++
+        run: |
+          cd cpp/src
+          make
+
+      - name: Build Python
+        run: |
+          cd python
+          python3 -m pip install .
+
