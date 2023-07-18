@@ -142,12 +142,6 @@ def measure_diffusion(input_filename, config):
         pickle.dump((test_statistic_values), fout)
 
     zoom_factor = 100
-    #if test_statistic == "chi2":
-    #    test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
-        # If chi^2, get delta chi^2 values
-    #    test_statistic_values = test_statistic_values - np.amin(test_statistic_values)
-    #elif test_statistic == "invariant3":
-    #    test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
     test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
     if test_statistic == "chi2":
         test_statistic_values = test_statistic_values - np.amin(test_statistic_values)
@@ -157,8 +151,9 @@ def measure_diffusion(input_filename, config):
     DT_result = (DT_step * point_x / zoom_factor) + DT_min - DT_step / 2.0
 
     ndof = 2 # Two parameter measurement
-    print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
-    print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
+    print('Minimum %s:  %.5f' % (test_statistic, min_test_statistic))
+    if test_statistic == "chi2":
+        print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
 
     save_outputs(test_statistic_values, all_shifts_actual, all_shifts_result, config)
 
