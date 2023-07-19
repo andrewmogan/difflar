@@ -240,8 +240,8 @@ def calc_invariant3_redux(pred_hist, cathode_hist, cathode_max, interpolation='s
 
         min_wire_z_scores = []
 
-        for shift_val in shift_vals:
-        #for shift_val in range(0, 1):
+        #for shift_val in shift_vals:
+        for shift_val in range(0, 1):
             pred_interp = interp1d(np.arange(N_ticks), pred_hist[:, col], fill_value='extrapolate', kind='cubic')
             pred_hist_1D_shifted[:, col] = pred_interp(np.arange(N_ticks) - shift_val)
 
@@ -255,7 +255,7 @@ def calc_invariant3_redux(pred_hist, cathode_hist, cathode_max, interpolation='s
 
             prediction_roi = pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask]
             measurement_roi = cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask]
-            wire_z_scores_temp = (prediction_roi - measurement_roi) / sigma
+            wire_z_scores_temp = (prediction_roi / pred_norm - measurement_roi / cathode_norm) / sigma
 
             print('wire_z_scores_temp', wire_z_scores_temp)
             print('len wire_z_scores_temp:', len(wire_z_scores_temp))
