@@ -18,6 +18,7 @@ setup(
                       'scipy', 
                       'uproot', 
                       'pyyaml',
+                      'pickle',
                       'matplotlib'],
     python_requires='>=3.6',
     classifiers=[

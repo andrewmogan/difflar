@@ -127,6 +127,7 @@ def measure_diffusion(input_filename, config):
 
     test_statistic = config['test_statistic']
     interpolation = config['interpolation']
+    save_waveform_data = config['save_waveform_data']
 
     #test_statistic_values, min_test_statistic, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
     test_statistic_values, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
@@ -134,7 +135,8 @@ def measure_diffusion(input_filename, config):
         input_signal, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
         test_statistic=test_statistic,
         interpolation=interpolation,
-        isdata=isdata
+        isdata=isdata,
+        save_waveform_data=save_waveform_data,
     )
     min_test_statistic = np.amin(test_statistic_values)
     debug_filename = '{}/output_data/debug_full.pkl'.format(LARDIFF_DIR)

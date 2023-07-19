@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import pickle
 from .waveform_functions import get_cathode_prediction
 from .test_statistics import calc_chisq, calc_test_statistic
 from .consts import *
@@ -10,6 +12,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                         test_statistic='chi2',
                         interpolation='scipy',
                         isdata=False,
+                        save_waveform_data=False,
                         verbose=False):
 
     min_test_stat = np.inf
@@ -43,6 +46,14 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                     DL, DT, 
                     isdata
                 )
+                # Write to pickle file for offline use
+                waveform_file_name = 'output_data/waveforms.pkl'
+                if not os.path.exists(waveform_file_name):
+                    with open(waveform_file_name, 'wb') as fout:
+                        pickle.dump((anode_hist, anode_uncert_hist, 
+                                     cathode_hist, cathode_uncert_hist, 
+                                     pred_hist, pred_uncert_hist), fout)
+                        print('Wrote', waveform_file_name)
                 # Calculate test statistic for this angle bin
                 temp_test_stat, temp_numvals, shift_vec = calc_test_statistic(
                     anode_hist[k], anode_uncert_hist[k], 
