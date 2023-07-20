@@ -2,5 +2,8 @@ __pycache__/
 python/src/lardiff.egg-info/
 WaveformStudy
 python/build
+output_data/
+*.pkl
 *.npz
 *.png
+*.txt
