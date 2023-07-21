@@ -47,7 +47,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                     isdata
                 )
                 # Write to pickle file for offline use
-                waveform_file_name = 'output_data/waveforms.pkl'
+                waveform_file_name = 'output_data/waveforms_{}.pkl'.format('data' if isdata else 'mc')
                 if not os.path.exists(waveform_file_name):
                     with open(waveform_file_name, 'wb') as fout:
                         pickle.dump((anode_hist, anode_uncert_hist, 
@@ -75,6 +75,8 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
 
             # Each point  in the DL/DT grid contains the sum of test_stat values across all angles
             test_stat_values[row, col] = test_stat
+            #if test_statistic == 'invariant3_redux':
+            #    test_stat_values[row, col] = test_stat / num_angle_bins
             print('[GRID SCAN] test_stat_values grid:', test_stat_values)
             #print('[GRID SCAN] Total test statistic value for angle {}, row {}, col {}, is {}'.format(k, row, col, test_stat))
             num_values[row, col] = numvals
