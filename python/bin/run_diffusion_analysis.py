@@ -127,6 +127,7 @@ def measure_diffusion(input_filename, config):
 
     test_statistic = config['test_statistic']
     interpolation = config['interpolation']
+    save_waveform_data = config['save_waveform_data']
 
     #test_statistic_values, min_test_statistic, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
     test_statistic_values, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
@@ -134,7 +135,8 @@ def measure_diffusion(input_filename, config):
         input_signal, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
         test_statistic=test_statistic,
         interpolation=interpolation,
-        isdata=isdata
+        isdata=isdata,
+        save_waveform_data=save_waveform_data,
     )
     min_test_statistic = np.amin(test_statistic_values)
     debug_filename = '{}/output_data/debug_full.pkl'.format(LARDIFF_DIR)
@@ -142,20 +144,18 @@ def measure_diffusion(input_filename, config):
         pickle.dump((test_statistic_values), fout)
 
     zoom_factor = 100
+    test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
     if test_statistic == "chi2":
-        test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
-        # If chi^2, get delta chi^2 values
         test_statistic_values = test_statistic_values - np.amin(test_statistic_values)
-    elif test_statistic == "invariant3":
-        test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
 
     point_y, point_x = np.unravel_index(np.argmin(test_statistic_values), test_statistic_values.shape)
     DL_result = (DL_step * point_y / zoom_factor) + DL_min - DL_step / 2.0
     DT_result = (DT_step * point_x / zoom_factor) + DT_min - DT_step / 2.0
 
     ndof = 2 # Two parameter measurement
-    print('Minimum %s:  %.2f' % (test_statistic, min_test_statistic))
-    print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
+    print('Minimum %s:  %.5f' % (test_statistic, min_test_statistic))
+    if test_statistic == "chi2":
+        print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
 
     save_outputs(test_statistic_values, all_shifts_actual, all_shifts_result, config)
 

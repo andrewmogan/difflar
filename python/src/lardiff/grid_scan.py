@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import pickle
 from .waveform_functions import get_cathode_prediction
 from .test_statistics import calc_chisq, calc_test_statistic
 from .consts import *
@@ -10,6 +12,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                         test_statistic='chi2',
                         interpolation='scipy',
                         isdata=False,
+                        save_waveform_data=False,
                         verbose=False):
 
     min_test_stat = np.inf
@@ -30,10 +33,12 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
     for DL in np.arange(DL_min, DL_max+DL_step, DL_step):
         col = 0
         for DT in np.arange(DT_min, DT_max+DT_step, DT_step):
+            print('<<<<<<<<<<<<<<<<<<<< DL {} DT {} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(DL, DT))
             test_stat = 0.0
             numvals = 0.0
             all_shifts = np.zeros((num_angle_bins, N_wires))
             for k in range(0, num_angle_bins):
+                print('************************ANGLE BIN', k, '***************************')
                 # Generate prediction histograms
                 pred_hist, pred_uncert_hist = get_cathode_prediction(
                     input_signal[k], 
@@ -41,6 +46,14 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                     DL, DT, 
                     isdata
                 )
+                # Write to pickle file for offline use
+                waveform_file_name = 'output_data/waveforms_{}.pkl'.format('data' if isdata else 'mc')
+                if not os.path.exists(waveform_file_name):
+                    with open(waveform_file_name, 'wb') as fout:
+                        pickle.dump((anode_hist, anode_uncert_hist, 
+                                     cathode_hist, cathode_uncert_hist, 
+                                     pred_hist, pred_uncert_hist), fout)
+                        print('Wrote', waveform_file_name)
                 # Calculate test statistic for this angle bin
                 temp_test_stat, temp_numvals, shift_vec = calc_test_statistic(
                     anode_hist[k], anode_uncert_hist[k], 
@@ -51,6 +64,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                 )
                 # Running sum of test statistic values 
                 test_stat += temp_test_stat
+                print('[GRID SCAN] Total test statistic value for angle {}, row {}, col {}, is {}'.format(k, row, col, test_stat))
                 numvals += temp_numvals
                 all_shifts[k, :] = shift_vec
                 if verbose:
@@ -61,10 +75,15 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
 
             # Each point  in the DL/DT grid contains the sum of test_stat values across all angles
             test_stat_values[row, col] = test_stat
+            #if test_statistic == 'invariant3_redux':
+            #    test_stat_values[row, col] = test_stat / num_angle_bins
+            print('[GRID SCAN] test_stat_values grid:', test_stat_values)
+            #print('[GRID SCAN] Total test statistic value for angle {}, row {}, col {}, is {}'.format(k, row, col, test_stat))
             num_values[row, col] = numvals
             # Get the DL/DT values which minimize the test_stat
             if test_stat < min_test_stat:
                 min_test_stat = test_stat
+                print('[GRID SCAN] Update min test stat to', min_test_stat)
                 min_numvals = numvals
                 all_shifts_result = all_shifts
             # If hypothesis values are less than step size away from true values...save

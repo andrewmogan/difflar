@@ -30,10 +30,6 @@ def calc_test_statistic(anode_hist, anode_uncert_hist,
             if cathode_hist[row, col] < cathode_max: continue
             cathode_max = cathode_hist[row, col]
 
-    ### TODO Slicing would be faster, but how to ignore the central wire while slicing?
-    ### Implement a range of indices instead of N_wires_start etc.?
-    #cathode_max = np.amax(cathode_hist[N_ticks_start:N_ticks_end, N_wires_start:N_wires_end])
-
     # Calculate test statistic of choice
     if test_statistic == "chi2":
         temp_test_stat, temp_num_values, shift_vector = calc_chisq(
@@ -50,6 +46,12 @@ def calc_test_statistic(anode_hist, anode_uncert_hist,
     elif test_statistic == "invariant3_alt":
         temp_test_stat, temp_num_values, shift_vector = calc_invariant3_alt(
             pred_hist, cathode_hist, cathode_max,
+            interpolation
+        )
+    elif test_statistic == "invariant3_redux":
+        temp_test_stat, temp_num_values, shift_vector = calc_invariant3_redux(
+            pred_hist, pred_uncert_hist,
+            cathode_hist, cathode_uncert_hist, cathode_max,
             interpolation
         )
     else:
@@ -151,10 +153,10 @@ def calc_invariant3(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hi
             for row in range(N_ticks_start, N_ticks_end):
                 if cathode_hist[row, col] < threshold_rel * cathode_max: continue
 
-                sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
-                sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
-                #sigma_1 = np.std(pred_uncert_hist_1D_shifted)
-                #sigma_2 = np.std(cathode_uncert_hist[:, col])
+                #sigma_1 = pred_uncert_hist_1D_shifted[row]/pred_norm
+                #sigma_2 = cathode_uncert_hist[row, col]/cathode_norm
+                sigma_1 = np.std(pred_uncert_hist_1D_shifted)
+                sigma_2 = np.std(cathode_uncert_hist[:, col])
                 #sigma_1 = pred_uncert_hist_1D_shifted[row]
                 #sigma_2 = cathode_uncert_hist[row, col]
                 sigma = np.sqrt(sigma_1*sigma_1 + sigma_2*sigma_2)
@@ -211,6 +213,80 @@ def calc_invariant3_alt(pred_hist, cathode_hist, cathode_max, interpolation='sci
     print('invariant3 shape', distances.shape)
     print('invariant3', distances)
     return invar3, numvals, shift_vec
+
+# Yet another attempt at invariant3
+def calc_invariant3_redux(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, cathode_max, interpolation='scipy'):
+    invariant3_value = 0
+    numvals = 0
+    shift_vec = np.zeros((N_wires))
+    z_scores = np.array([])
+    pred_uncert_hist_1D_shifted = np.empty_like(pred_uncert_hist)
+
+    # Invariant3 function
+    dist = lambda x: invariant3(x, alpha=2/3, fast=False)
+
+    for col in range(N_wires_start, N_wires_end):
+
+        # Skip central wire to avoid bias 
+        if col == (N_wires-1)//2: continue
+
+        print('----------Wire', col, '------------')
+
+        min_distance = np.inf
+        min_numvals = 0
+
+        # Iteratively shift cathode prediction relative to measurement
+        # Take configuration with minimum chi^2 to avoid mis-alignment bias
+        shift_vals = np.arange(-1 * shift_max, shift_max + shift_step, shift_step)
+        pred_hist_1D_shifted = np.empty_like(pred_hist)
+
+        min_wire_z_scores = []
+
+        for shift_val in shift_vals:
+        #for shift_val in range(0, 1):
+            pred_interp = interp1d(np.arange(N_ticks), pred_hist[:, col], fill_value='extrapolate', kind='cubic')
+            pred_hist_1D_shifted[:, col] = pred_interp(np.arange(N_ticks) - shift_val)
+
+            uncert_interp = interp1d(np.arange(N_ticks), pred_uncert_hist[:, col], fill_value='extrapolate', kind='cubic')
+            pred_uncert_hist_1D_shifted[:, col] = uncert_interp(np.arange(N_ticks) - shift_val)
+
+            cathode_mask = cathode_hist[N_ticks_start:N_ticks_end, col] >= threshold_rel * cathode_max
+            pred_norm = pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask].sum()
+            cathode_norm = cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask].sum()
+
+            prediction_roi = pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm
+            measurement_roi = cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm
+            sigma_1 = pred_uncert_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm
+            sigma_2 = cathode_uncert_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm
+            sigma = np.sqrt(sigma_1 * sigma_1 + sigma_2 * sigma_2)
+            wire_z_scores_temp = (prediction_roi - measurement_roi) / sigma
+
+            numvals_temp = np.count_nonzero(cathode_mask)
+
+            distance_temp = dist(wire_z_scores_temp)
+
+            if distance_temp < min_distance:
+                min_distance = distance_temp
+                print('Update min_distance to', min_distance)
+                min_wire_z_scores = wire_z_scores_temp
+                min_numvals = numvals_temp
+                shift_vec[col] = shift_val
+
+        print('Shifts:', shift_vec)
+        z_scores = np.concatenate((z_scores, min_wire_z_scores))
+
+        #invariant3_value += min_distance
+        numvals += min_numvals
+
+    #print('z_scores:', z_scores)
+    print('z scores shape:', z_scores.shape)
+    #dist = lambda x: invariant3(x, alpha=2/3, fast=False)
+    distance = dist(z_scores)
+    #print('invariant3 shape', distances.shape)
+    print('invariant3', distance)
+                
+    #return invariant3_value, numvals, shift_vec
+    return distance, numvals, shift_vec
 
 ############### Invariant3 Functions from the paper #################
 # https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.113008 #

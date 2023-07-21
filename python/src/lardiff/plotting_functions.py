@@ -202,13 +202,15 @@ def make_test_statistic_plot(delta_test_statistic_values, config,
     test_statistic = config['test_statistic']
     isdata = config['isdata']
 
+    print('Hello from make_test_statistic_plot!')
+
     if test_statistic == "chi2":
         make_chisq_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
                         DT_min, DT_max, DT_step, 
                         filename, isdata,
                         results_dict)
-    elif test_statistic == "invariant3":
+    elif test_statistic == "invariant3" or test_statistic == "invariant3_redux":
         make_invariant3_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
                         DT_min, DT_max, DT_step, 
@@ -295,6 +297,8 @@ def make_invariant3_plot(invariant3_values,
                          DL_min, DL_max, DL_step, 
                          DT_min, DT_max, DT_step, 
                          filename, isdata, results_dict):
+    print('len invariant3 values:', len(invariant3_values))
+    print('invariant3 values:', invariant3_values)
     point_y, point_x = np.unravel_index(np.argmin(invariant3_values), invariant3_values.shape)
 
     # Delta chi^2 levels corresponding to 1 and 2 sigma when measuring two parameters
