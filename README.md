@@ -54,4 +54,49 @@ $ python3
 If there are no errors, you should then be able to run the Python scripts using the output files from the waveform analyzer as input. 
 
 # Usage
+The diffusion analysis code can be run through a command-line interface. The executable located in `/path/to/lardiff/python/bin/` can be run as:
+```
+python run_diffusion_analysis.py --input_filename <input_file> --config <config.yaml>
+```
+where `input_file` should be a ROOT-format file output from the C++ `WaveformStudy.cpp` module and `config.yaml` is a config file containing the necessary configuration parameters described below. 
+
+## yaml Configuration 
+
+Due to the large number of configurable parameters, and the possibility of adding more parameters in the future, the diffusion analysis code called from `run_diffusion_analysis.py` is configured through a yaml file. You can find example configuration files in `/path/to/lardiff/python/config`. The config file should contain the following parameters:
+
+- DL_min: minimum $D_L$ value in $cm^2/s$ in the grid scan
+- DL_max: maximum $D_L$ value in $cm^2/s$ in in the grid scan
+- DL_step: $D_L$ step size in the $\chi^2$ grid scan
+- DT_min: minimum $D_T$ value in in $cm^2/s$ in the grid scan
+- DT_max: maximum $D_T$ value in in $cm^2/s$ in the grid scan
+- DT_step: $D_T$ step size in the grid scan
+- angle_min: minimum angular bin value in degrees
+- angle_max: maximum angular bin value in degrees
+- angle_step: angular bin step size. This should be set to 2.
+- test_statistic: which test statistic to use in the grid scan
+- interpolation: interpolation method to use when interpolating signal waveforms, e.g. `'scipy'` or `'numpy'`
+- isdata: boolean flag stating whether the input file was processed from simulation or data
+- save_waveform_data: boolean flag that controls whether a sample set of wire waveforms is saved to a `.pkl` file for offline use
+
+## Outputs
+
 To-do
+
+# Contributing
+
+To-do
+
+# License
+
+Distributed under the MIT License. See LICENSE for more information.
+
+
+
+
+
+
+
+
+
+
+
