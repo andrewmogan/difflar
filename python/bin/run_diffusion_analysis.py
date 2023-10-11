@@ -58,7 +58,7 @@ def validate_config(config):
     if not isinstance(config['angle_step'], int):
         raise ValueError('angle_step must be an integer')
 
-def save_outputs(delta_test_statistic_values, all_shifts_actual, all_shifts_result, config):
+def save_outputs(delta_test_statistic_values, numvals, all_shifts_actual, all_shifts_result, config):
 
     current_time = datetime.datetime.now().strftime('%m%d%Y%H%M%S')
     #test_statistic_file_name = '{}/plots/diffusion_{}_{}.png'.format(LARDIFF_DIR, config['test_statistic'], current_time)
@@ -78,7 +78,7 @@ def save_outputs(delta_test_statistic_values, all_shifts_actual, all_shifts_resu
 
     output_data_filename = '{}/output_data/diffusion_results_{}_{}.pkl'.format(LARDIFF_DIR, data_or_mc, current_time)
     with open(output_data_filename, 'wb') as fout:
-        pickle.dump((results_dict, all_shifts_actual, all_shifts_result, delta_test_statistic_values, config), fout)
+        pickle.dump((results_dict, all_shifts_actual, all_shifts_result, delta_test_statistic_values, numvals, config), fout)
 
     print('Output data and config saved to', output_data_filename)
 
@@ -130,7 +130,7 @@ def measure_diffusion(input_filename, config):
     save_waveform_data = config['save_waveform_data']
 
     #test_statistic_values, min_test_statistic, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
-    test_statistic_values, min_numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
+    test_statistic_values, min_numvals, numvals, all_shifts_result, all_shifts_actual = diffusion_grid_scan(
         DL_min, DL_max, DL_step, DT_min, DT_max, DT_step, num_angle_bins,
         input_signal, anode_hist, anode_uncert_hist, cathode_hist, cathode_uncert_hist,
         test_statistic=test_statistic,
@@ -138,15 +138,20 @@ def measure_diffusion(input_filename, config):
         isdata=isdata,
         save_waveform_data=save_waveform_data,
     )
+    print('test_stat_values shape:', test_statistic_values.shape)
+    print('numvals shape:', numvals.shape)
     min_test_statistic = np.amin(test_statistic_values)
+    print('np.amin numvals:', np.amin(numvals))
+    print('Min {} before subtract: {} / {}'.format(test_statistic, min_test_statistic, min_numvals))
     debug_filename = '{}/output_data/debug_full.pkl'.format(LARDIFF_DIR)
     with open(debug_filename, 'wb') as fout:
         pickle.dump((test_statistic_values), fout)
 
     zoom_factor = 100
     test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
-    if test_statistic == "chi2":
-        test_statistic_values = test_statistic_values - np.amin(test_statistic_values)
+    # TODO Comment back in after making non-delta chi2 plots
+    #if test_statistic == "chi2":
+    #    test_statistic_values = test_statistic_values - np.amin(test_statistic_values)
 
     point_y, point_x = np.unravel_index(np.argmin(test_statistic_values), test_statistic_values.shape)
     DL_result = (DL_step * point_y / zoom_factor) + DL_min - DL_step / 2.0
@@ -157,7 +162,7 @@ def measure_diffusion(input_filename, config):
     if test_statistic == "chi2":
         print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
 
-    save_outputs(test_statistic_values, all_shifts_actual, all_shifts_result, config)
+    save_outputs(test_statistic_values, numvals, all_shifts_actual, all_shifts_result, config)
 
 def main():
 
