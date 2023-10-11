@@ -15,7 +15,11 @@ angle_sim_step = 0.1
 
 timeTickSF = 0.4
 driftVel_data = 0.1571 # DATA
-driftVel_MC = 0.157565 # MC (at 493.8 V/cm)
+#driftVel_MC = 0.157565 # MC (at 493.8 V/cm)
+driftVel_MC = 0.157560  # Value from simparams.jsonnet
+#driftVel_MC = 0.1565 # Value in wcls-multitpc-sim-drift-simchannel-omit-noise.fcl
+#driftVel_MC = 0.1544 # MC down by 2% (just to see)
+#driftVel_MC = 0.1560 # MC down by 1% (just to see)
 wirePitch = 0.3
 
 N_wires = 11
