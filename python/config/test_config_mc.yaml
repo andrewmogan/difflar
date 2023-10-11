@@ -16,3 +16,4 @@ angle_step: 2
 test_statistic: 'chi2'
 interpolation: 'scipy'
 isdata: False
+save_waveform_data: True

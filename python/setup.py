@@ -18,6 +18,7 @@ setup(
                       'scipy', 
                       'uproot', 
                       'pyyaml',
+                      'lmfit',
                       'matplotlib'],
     python_requires='>=3.6',
     classifiers=[

@@ -85,7 +85,7 @@ def coarsen_signal(input):
     return result
 
 # Shift 1D distribution in time
-def shift_signal_1D(input, shift_val, interpolation):
+def shift_signal_1D(input, shift_val, interpolation='scipy'):
     if interpolation == 'scipy':
         input_interp = interp.interp1d(np.arange(input.size), input, fill_value='extrapolate', kind='cubic')
         result = input_interp(np.arange(input.size)-shift_val)
