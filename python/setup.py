@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-VER = "1.0.0"
+VER = "1.2.0"
 
 setup(
     name="lardiff",
@@ -13,7 +13,12 @@ setup(
     url="https://github.com/andrewmogan/Icarus_Diffusion.git",
     packages=find_packages(where="src"), 
     package_dir={"":"src"},
-    install_requires=['numba', 'numpy', 'scipy', 'uproot', 'matplotlib'],
+    install_requires=['numba', 
+                      'numpy', 
+                      'scipy', 
+                      'uproot', 
+                      'pyyaml',
+                      'matplotlib'],
     python_requires='>=3.6',
     classifiers=[
         "Programming Language :: Python :: 3",

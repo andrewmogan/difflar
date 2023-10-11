@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    #container:
+      #image: rootproject/root:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      #- name: Build C++
+        #run: |
+          #cd cpp/src
+          #make
+
+      - name: Build Python
+        run: |
+          cd python
+          python3 -m pip install .
+
