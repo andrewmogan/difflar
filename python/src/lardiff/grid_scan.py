@@ -77,9 +77,12 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             test_stat_values[row, col] = test_stat
             #if test_statistic == 'invariant3_redux':
             #    test_stat_values[row, col] = test_stat / num_angle_bins
-            print('[GRID SCAN] test_stat_values grid:', test_stat_values)
             #print('[GRID SCAN] Total test statistic value for angle {}, row {}, col {}, is {}'.format(k, row, col, test_stat))
             num_values[row, col] = numvals
+
+            print('[GRID SCAN] test_stat_values grid:', test_stat_values)
+            print('[GRID SCAN] num_values grid:', num_values)
+
             # Get the DL/DT values which minimize the test_stat
             if test_stat < min_test_stat:
                 min_test_stat = test_stat
@@ -96,5 +99,5 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             col += 1
         row += 1
 
-    return test_stat_values, min_numvals, all_shifts_result, all_shifts_actual
+    return test_stat_values, min_numvals, num_values, all_shifts_result, all_shifts_actual
     #return test_stat_values, min_test_stat, min_numvals, all_shifts_result, all_shifts_actual
