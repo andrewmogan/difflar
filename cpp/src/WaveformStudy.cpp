@@ -3,6 +3,8 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+#include <string>
+#include <filesystem>
 
 #include "TROOT.h"
 #include "ROOT/TThreadedObject.hxx"
@@ -74,6 +76,7 @@ const float WF_ACdist = 148.275;
 
 vector<float> TrimVecExtrema(vector<float> inputvec);
 void AddFiles(TChain *ch, const char *dir, const char* substr, bool twotrees);
+void AddFilesFromList(TChain *ch, const std::string& file_list_path, bool twotrees);
 
 int main(int argc, char** argv)
 {
@@ -100,6 +103,7 @@ int main(int argc, char** argv)
   char *runtype;
   int planenum;
   char *plotname;
+  std::string filelist;
   if(argc < 6)
   {
     cout << endl << "Not enough input parameters provided.  Aborting." << endl << endl;
@@ -112,6 +116,7 @@ int main(int argc, char** argv)
     runtype = (char*) argv[3];
     planenum = atoi(argv[4]);
     plotname = (char*) argv[5];
+    filelist = argv[6];
   }
 
   vector<pair<float, float>> phi_bins((int) (angle_max-angle_min)/angle_step);
@@ -217,11 +222,13 @@ int main(int argc, char** argv)
   TChain* inputfiles = new TChain(treedirname);
   if(cryoNum == -1)
   {
-    AddFiles(inputfiles,dirname,filetext,true);
+    //AddFiles(inputfiles,dirname,filetext,true);
+    AddFilesFromList(inputfiles,filelist,true);
   }
   else
   {
-    AddFiles(inputfiles,dirname,filetext,false);
+    //AddFiles(inputfiles,dirname,filetext,false);
+    AddFilesFromList(inputfiles,filelist,false);
   }
 
   TTreeReader readerTracks(inputfiles);
@@ -1036,3 +1043,39 @@ void AddFiles(TChain *ch, const char *dir = ".", const char* substr = "", bool t
 
   return;
 }
+#include <fstream>
+
+#include <fstream>
+#include <filesystem>
+
+void AddFilesFromList(TChain* ch, const std::string& file_list_path, bool twotrees = false)
+{
+    std::ifstream file_list(file_list_path);
+    if (!file_list)
+    {
+        std::cerr << "Error opening file: " << file_list_path << std::endl;
+        return;
+    }
+
+    std::string file_path;
+    while (std::getline(file_list, file_path))
+    {
+        std::filesystem::path path(file_path);
+
+        if (std::filesystem::exists(path) && std::filesystem::is_regular_file(path) && path.extension() == ".root")
+        {
+            ch->AddFile(file_path.c_str());
+            if (twotrees)
+            {
+                std::filesystem::path twotrees_path = path / "caloskimW/TrackCaloSkim";
+                if (std::filesystem::exists(twotrees_path) && std::filesystem::is_directory(twotrees_path))
+                {
+                    ch->AddFile(twotrees_path.c_str());
+                }
+            }
+        }
+    }
+
+    file_list.close();
+}
+
