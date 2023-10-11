@@ -61,13 +61,16 @@ def validate_config(config):
 def save_outputs(delta_test_statistic_values, numvals, all_shifts_actual, all_shifts_result, config):
 
     current_time = datetime.datetime.now().strftime('%m%d%Y%H%M%S')
-    #test_statistic_file_name = '{}/plots/diffusion_{}_{}.png'.format(LARDIFF_DIR, config['test_statistic'], current_time)
     test_statistic = config['test_statistic']
     isdata = config['isdata']
     data_or_mc = 'data' if isdata==True else 'mc'
 
     results_dict = {}
-    test_statistic_file_name = '{}/plots/diffusion_{}_{}_{}.png'.format(LARDIFF_DIR, test_statistic, data_or_mc, current_time)
+    test_statistic_file_name = '{}/plots/diffusion_{}_{}_{}.png'.format(
+        LARDIFF_DIR, test_statistic, data_or_mc, current_time
+    )
+
+    # DL and DT results are extracted from the plotting function and put into results_dict
     make_test_statistic_plot(
         delta_test_statistic_values, config,
         filename=test_statistic_file_name,
@@ -78,7 +81,11 @@ def save_outputs(delta_test_statistic_values, numvals, all_shifts_actual, all_sh
 
     output_data_filename = '{}/output_data/diffusion_results_{}_{}.pkl'.format(LARDIFF_DIR, data_or_mc, current_time)
     with open(output_data_filename, 'wb') as fout:
-        pickle.dump((results_dict, all_shifts_actual, all_shifts_result, delta_test_statistic_values, numvals, config), fout)
+        pickle.dump((results_dict, 
+                     all_shifts_actual, all_shifts_result, 
+                     delta_test_statistic_values, numvals, 
+                     config), 
+                     fout)
 
     print('Output data and config saved to', output_data_filename)
 
@@ -149,9 +156,8 @@ def measure_diffusion(input_filename, config):
 
     zoom_factor = 100
     test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
-    # TODO Comment back in after making non-delta chi2 plots
-    #if test_statistic == "chi2":
-    #    test_statistic_values = test_statistic_values - np.amin(test_statistic_values)
+    if test_statistic == "chi2":
+        test_statistic_values = test_statistic_values - np.amin(test_statistic_values)
 
     point_y, point_x = np.unravel_index(np.argmin(test_statistic_values), test_statistic_values.shape)
     DL_result = (DL_step * point_y / zoom_factor) + DL_min - DL_step / 2.0
@@ -162,7 +168,9 @@ def measure_diffusion(input_filename, config):
     if test_statistic == "chi2":
         print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
 
-    save_outputs(test_statistic_values, numvals, all_shifts_actual, all_shifts_result, config)
+    save_outputs(test_statistic_values, numvals, 
+                 all_shifts_actual, all_shifts_result, 
+                 config)
 
 def main():
 
