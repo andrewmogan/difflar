@@ -1,6 +1,6 @@
 import argparse
 import datetime
-import os
+import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -20,15 +20,21 @@ from lardiff.plotting_functions import make_test_statistic_plot
 
 # Set project root directory two directories up
 LARDIFF_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_CONFIG_PATH = "{:s}/config/default.yaml".format(LARDIFF_DIR)
 
 def parse_args():
+    current_time = datetime.datetime.now().strftime('%m%d%Y_%H%M%S')
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_filename", type=str, 
-                        help="Input .root file from WaveformStudy")
+    if len(sys.argv) == 1:
+        print(parser.print_help())
+        parser.exit()
+    parser.add_argument("--input_filename", type=str, required=True,
+                        help="Input .root file from C++ waveform processor")
     parser.add_argument('-c', '--config', type=str, 
                         default='{}/config/default_mc.yaml'.format(LARDIFF_DIR),
                         help='Path to YAML config file')
+    parser.add_argument('-o', '--output_filename', type=str, 
+                        default='{}/output_data/diffusion_results_{}.pkl'.format(LARDIFF_DIR, current_time),
+                        help='Output file name')
     
     args = parser.parse_args()
     return args 
@@ -58,9 +64,11 @@ def validate_config(config):
     if not isinstance(config['angle_step'], int):
         raise ValueError('angle_step must be an integer')
 
-def save_outputs(delta_test_statistic_values, numvals, all_shifts_actual, all_shifts_result, config):
+def save_outputs(delta_test_statistic_values, numvals, 
+                 all_shifts_actual, all_shifts_result, 
+                 output_filename, config):
 
-    current_time = datetime.datetime.now().strftime('%m%d%Y%H%M%S')
+    current_time = datetime.datetime.now().strftime('%m%d%Y_%H%M%S')
     test_statistic = config['test_statistic']
     isdata = config['isdata']
     data_or_mc = 'data' if isdata==True else 'mc'
@@ -79,7 +87,10 @@ def save_outputs(delta_test_statistic_values, numvals, all_shifts_actual, all_sh
     print('RUN results_dict', results_dict)
     print('Test statistic grid scan plot saved to', test_statistic_file_name)
 
-    output_data_filename = '{}/output_data/diffusion_results_{}_{}.pkl'.format(LARDIFF_DIR, data_or_mc, current_time)
+    #output_data_filename = '{}/output_data/diffusion_results_{}_{}.pkl'.format(LARDIFF_DIR, data_or_mc, current_time)
+    output_data_filename = output_filename
+    if 'output_filename' in config:
+        output_data_filename = config['output_filename']
     with open(output_data_filename, 'wb') as fout:
         pickle.dump((results_dict, 
                      all_shifts_actual, all_shifts_result, 
@@ -89,7 +100,7 @@ def save_outputs(delta_test_statistic_values, numvals, all_shifts_actual, all_sh
 
     print('Output data and config saved to', output_data_filename)
 
-def measure_diffusion(input_filename, config):
+def measure_diffusion(input_filename, output_filename, config):
 
     input_file = uproot.open(input_filename)
 
@@ -170,7 +181,7 @@ def measure_diffusion(input_filename, config):
 
     save_outputs(test_statistic_values, numvals, 
                  all_shifts_actual, all_shifts_result, 
-                 config)
+                 output_filename, config)
 
 def main():
 
@@ -183,7 +194,7 @@ def main():
     print('**********************************')
 
     start_time = time.time()
-    measure_diffusion(args.input_filename, config)
+    measure_diffusion(args.input_filename, args.output_filename, config)
     elapsed_time = time.time() - start_time
     print("Elapsed time:", elapsed_time, "seconds")
 
