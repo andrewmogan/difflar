@@ -303,8 +303,10 @@ def make_invariant3_plot(invariant3_values,
 
     # Delta chi^2 levels corresponding to 1 and 2 sigma when measuring two parameters
     # See the table toward to bottom of https://homepage.physics.uiowa.edu/~pkaaret/2019f_p4905/L17.html
-    level_1sigma = 2.30
-    level_2sigma = 6.17
+    #level_1sigma = 2.30
+    #level_2sigma = 6.17
+    level_1sigma = 35.2
+    level_2sigma = 45.4
     
     tickformat_DT = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format((DT_step*x/100.0)+DT_min-DT_step/2.0))
     tickformat_DL = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format((DL_step*x/100.0)+DL_min-DL_step/2.0))

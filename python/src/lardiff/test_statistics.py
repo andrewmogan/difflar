@@ -71,7 +71,6 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
 
         # Skip central wire to avoid bias 
         if col == (N_wires-1)//2: continue
-
         min_chisq = np.inf
         min_numvals = 0
 
@@ -101,7 +100,7 @@ def calc_chisq(pred_hist, pred_uncert_hist, cathode_hist, cathode_uncert_hist, c
             chisq_temp = np.sum(((pred_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm -
                                   cathode_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm) ** 2) /
 								((pred_uncert_hist_1D_shifted[N_ticks_start:N_ticks_end, col][cathode_mask] / pred_norm) ** 2 +
-								 (cathode_uncert_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm) ** 2))
+			    				 (cathode_uncert_hist[N_ticks_start:N_ticks_end, col][cathode_mask] / cathode_norm) ** 2))
 
             numvals_temp = np.count_nonzero(cathode_mask)
 
