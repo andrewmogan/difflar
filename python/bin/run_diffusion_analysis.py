@@ -64,7 +64,8 @@ def validate_config(config):
     if not isinstance(config['angle_step'], int):
         raise ValueError('angle_step must be an integer')
 
-def save_outputs(delta_test_statistic_values, numvals, 
+def save_outputs(results_dict,
+                 delta_test_statistic_values, numvals, 
                  all_shifts_actual, all_shifts_result, 
                  output_filename, config):
 
@@ -73,7 +74,7 @@ def save_outputs(delta_test_statistic_values, numvals,
     isdata = config['isdata']
     data_or_mc = 'data' if isdata==True else 'mc'
 
-    results_dict = {}
+    #results_dict = {}
     test_statistic_file_name = '{}/plots/diffusion_{}_{}_{}.png'.format(
         LARDIFF_DIR, test_statistic, data_or_mc, current_time
     )
@@ -93,8 +94,8 @@ def save_outputs(delta_test_statistic_values, numvals,
         output_data_filename = config['output_filename']
     with open(output_data_filename, 'wb') as fout:
         pickle.dump((results_dict, 
-                     all_shifts_actual, all_shifts_result, 
-                     delta_test_statistic_values, numvals, 
+                     #all_shifts_actual, all_shifts_result, 
+                     #delta_test_statistic_values, numvals, 
                      config), 
                      fout)
 
@@ -179,7 +180,13 @@ def measure_diffusion(input_filename, output_filename, config):
     if test_statistic == "chi2":
         print('Minimum %s (Reduced):  %.2f' % (test_statistic, (min_test_statistic / (min_numvals - ndof))))
 
-    save_outputs(test_statistic_values, numvals, 
+    results_dict = {}
+    results_dict['min_test_statistic'] = min_test_statistic
+    results_dict['min_numvals']        = min_numvals
+    results_dict['ndof']               = ndof
+
+    save_outputs(results_dict,
+                 test_statistic_values, numvals, 
                  all_shifts_actual, all_shifts_result, 
                  output_filename, config)
 
