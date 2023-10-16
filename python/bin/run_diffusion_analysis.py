@@ -29,13 +29,12 @@ def parse_args():
         parser.exit()
     parser.add_argument("--input_filename", type=str, required=True,
                         help="Input .root file from C++ waveform processor")
-    parser.add_argument('-c', '--config', type=str, 
-                        default='{}/config/default_mc.yaml'.format(LARDIFF_DIR),
-                        help='Path to YAML config file')
     parser.add_argument('-o', '--output_filename', type=str, 
                         default='{}/output_data/diffusion_results_{}.pkl'.format(LARDIFF_DIR, current_time),
                         help='Output file name')
-    
+    parser.add_argument('-c', '--config', type=str, 
+                        default='{}/config/default_mc.yaml'.format(LARDIFF_DIR),
+                        help='Path to YAML config file')
     args = parser.parse_args()
     return args 
 
@@ -161,9 +160,11 @@ def measure_diffusion(input_filename, output_filename, config):
     min_test_statistic = np.amin(test_statistic_values)
     print('np.amin numvals:', np.amin(numvals))
     print('Min {} before subtract: {} / {}'.format(test_statistic, min_test_statistic, min_numvals))
-    debug_filename = '{}/output_data/debug_full.pkl'.format(LARDIFF_DIR)
-    with open(debug_filename, 'wb') as fout:
-        pickle.dump((test_statistic_values), fout)
+
+    # TODO What was this for again?
+    #debug_filename = '{}/output_data/debug_full.pkl'.format(LARDIFF_DIR)
+    #with open(debug_filename, 'wb') as fout:
+    #    pickle.dump((test_statistic_values), fout)
 
     zoom_factor = 100
     test_statistic_values = ndimage.zoom(test_statistic_values, zoom_factor)
