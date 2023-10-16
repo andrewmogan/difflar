@@ -202,8 +202,6 @@ def make_test_statistic_plot(delta_test_statistic_values, config,
     test_statistic = config['test_statistic']
     isdata = config['isdata']
 
-    print('Hello from make_test_statistic_plot!')
-
     if test_statistic == "chi2":
         make_chisq_plot(delta_test_statistic_values, 
                         DL_min, DL_max, DL_step, 
