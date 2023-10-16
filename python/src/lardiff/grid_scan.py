@@ -84,8 +84,8 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             #print('[GRID SCAN] Total test statistic value for angle {}, row {}, col {}, is {}'.format(k, row, col, test_stat))
             num_values[row, col] = numvals
 
-            print('[GRID SCAN] test_stat_values grid:', test_stat_values)
-            print('[GRID SCAN] num_values grid:', num_values)
+            #print('[GRID SCAN] test_stat_values grid:', test_stat_values)
+            #print('[GRID SCAN] num_values grid:', num_values)
 
             # Get the DL/DT values which minimize the test_stat
             if test_stat < min_test_stat:
