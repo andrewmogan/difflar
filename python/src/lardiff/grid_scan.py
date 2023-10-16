@@ -67,7 +67,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
                 )
                 # Running sum of test statistic values 
                 test_stat += temp_test_stat
-                print('[GRID SCAN] Total test statistic value for angle {}, row {}, col {}, is {}'.format(k, row, col, test_stat))
+                #print('[GRID SCAN] Total test statistic value for angle {}, row {}, col {}, is {}'.format(k, row, col, test_stat))
                 numvals += temp_numvals
                 all_shifts[k, :] = shift_vec
 
@@ -90,7 +90,7 @@ def diffusion_grid_scan(DL_min, DL_max, DL_step, DT_min, DT_max, DT_step,
             # Get the DL/DT values which minimize the test_stat
             if test_stat < min_test_stat:
                 min_test_stat = test_stat
-                print('[GRID SCAN] Update min test stat to', min_test_stat)
+                #print('[GRID SCAN] Update min test stat to', min_test_stat)
                 min_numvals = numvals
                 all_shifts_result = all_shifts
             # If hypothesis values are less than step size away from true values...save
